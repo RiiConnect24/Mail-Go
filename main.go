@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-type Config struct {
+type config struct {
 	Port     int
 	Host     string
 	Username string
@@ -48,7 +48,7 @@ func sendHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	config := Config{}
+	config := config{}
 	file, err := os.Open("config.json")
 	if err != nil {
 		panic(err)
