@@ -1,0 +1,7 @@
+{
+  "Port": 3306,
+  "Host": "localhost",
+  "Username": "rc24",
+  "Password": "changeme",
+  "DBName": "WC24Mail"
+}
