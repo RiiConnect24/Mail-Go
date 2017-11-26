@@ -3,5 +3,6 @@
   "Host": "localhost",
   "Username": "rc24",
   "Password": "changeme",
-  "DBName": "WC24Mail"
+  "DBName": "WC24Mail",
+  "Interval": 10
 }

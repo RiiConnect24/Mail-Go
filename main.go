@@ -16,9 +16,11 @@ type config struct {
 	Username string
 	Password string
 	DBName   string
+	Interval int
 }
 
 var db *sql.DB
+var interval int
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +34,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
-	Check(w, r, db)
+	Check(w, r, interval)
 }
 
 func receiveHandler(w http.ResponseWriter, r *http.Request) {
@@ -70,6 +72,7 @@ func main() {
 
 	// If we've reached here, we're working fine.
 	db = testDb
+	interval = config.Interval
 
 	log.Println("Running...")
 	http.HandleFunc("/cgi-bin/check.cgi", checkHandler)
