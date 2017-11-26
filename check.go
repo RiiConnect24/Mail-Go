@@ -1,14 +1,18 @@
 package main
 
 import (
-	"net/http"
-	"log"
 	"fmt"
-	"time"
+	"log"
 	"math/rand"
+	"net/http"
 	"strconv"
+	"time"
 )
 
+// Check handles adding the proper interval for check.cgi along with future
+// challenge solving and future mail existence checking.
+// BUG(spotlightishere): Challenge solving isn't implemented whatsoever,
+// nor is if mail even exists.
 func Check(w http.ResponseWriter, r *http.Request, inter int) {
 	// Grab string of interval
 	interval := strconv.Itoa(inter)
@@ -40,7 +44,7 @@ func Check(w http.ResponseWriter, r *http.Request, inter int) {
 	result += "msg=Success.\n"
 	result += fmt.Sprint("res=", hmacKey, "\n")
 	// Random, non-zero string until we start checking
-	result += fmt.Sprint("mail.flag=", RandStringBytesMaskImprSrc(33), "\n")
+	result += fmt.Sprint("mail.flag=", randStringBytesMaskImprSrc(33), "\n")
 	result += fmt.Sprint("interval=", interval)
 	w.Write([]byte(result))
 }
@@ -55,7 +59,7 @@ const (
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
 
-func RandStringBytesMaskImprSrc(n int) string {
+func randStringBytesMaskImprSrc(n int) string {
 	b := make([]byte, n)
 	// A src.Int63() generates 63 random bits, enough for letterIdxMax characters!
 	for i, cache, remain := n-1, src.Int63(), letterIdxMax; i >= 0; {

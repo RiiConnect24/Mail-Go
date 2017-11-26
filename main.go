@@ -2,12 +2,12 @@ package main
 
 import (
 	"database/sql"
-	_ "github.com/go-sql-driver/mysql"
 	"encoding/json"
-	"os"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
+	"os"
 )
 
 type config struct {
