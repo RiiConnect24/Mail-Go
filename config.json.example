@@ -4,5 +4,8 @@
   "Username": "rc24",
   "Password": "changeme",
   "DBName": "WC24Mail",
-  "Interval": 10
+  "Interval": 10,
+  "BindTo": "mtwtest.rc24.xyz:80",
+  "SendGridKey": "changeme",
+  "SendGridDomain": "changeme.xyz"
 }

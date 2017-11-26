@@ -10,17 +10,20 @@ import (
 	"os"
 )
 
-type config struct {
-	Port     int
-	Host     string
-	Username string
-	Password string
-	DBName   string
-	Interval int
+type Config struct {
+	Port           int
+	Host           string
+	Username       string
+	Password       string
+	DBName         string
+	Interval       int
+	BindTo         string
+	SendGridKey    string
+	SendGridDomain string
 }
 
 var db *sql.DB
-var interval int
+var global Config
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +37,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
-	Check(w, r, interval)
+	Check(w, r, global.Interval)
 }
 
 func receiveHandler(w http.ResponseWriter, r *http.Request) {
@@ -46,22 +49,21 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendHandler(w http.ResponseWriter, r *http.Request) {
-	Send(w, r, db)
+	Send(w, r, db, global)
 }
 
 func main() {
-	config := config{}
 	file, err := os.Open("config.json")
 	if err != nil {
 		panic(err)
 	}
 	decoder := json.NewDecoder(file)
-	err = decoder.Decode(&config)
+	err = decoder.Decode(&global)
 	if err != nil {
 		panic(err)
 	}
 	testDb, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
-		config.Username, config.Password, config.Host, config.Port, config.DBName))
+		global.Username, global.Password, global.Host, global.Port, global.DBName))
 	if err != nil {
 		panic(err)
 	}
@@ -72,7 +74,6 @@ func main() {
 
 	// If we've reached here, we're working fine.
 	db = testDb
-	interval = config.Interval
 
 	log.Println("Running...")
 	http.HandleFunc("/cgi-bin/check.cgi", checkHandler)
@@ -80,5 +81,5 @@ func main() {
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
 	http.HandleFunc("/cgi-bin/send.cgi", sendHandler)
 	// We do this to log all access to the page.
-	log.Fatal(http.ListenAndServe(":80", logRequest(http.DefaultServeMux)))
+	log.Fatal(http.ListenAndServe(global.BindTo, logRequest(http.DefaultServeMux)))
 }
