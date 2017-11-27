@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"net/http"
-	//"github.com/google/uuid"
 	"log"
 	"regexp"
 	"fmt"
@@ -11,29 +10,40 @@ import (
 	"bufio"
 	"strings"
 	"github.com/google/uuid"
+	//"github.com/sendgrid/sendgrid-go"
 )
 
+var mailFormName = regexp.MustCompile(`m\d+`)
 var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
-var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)mails@(.*)$`)
+var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 var messageIDRegex = regexp.MustCompile(`Message-Id:\s<([0-9a-fA-F]*)@(?:.*)>$`)
 var dataRegex = regexp.MustCompile(`^DATA$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
 func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
+	// Go ahead and prepare the insert statement, for later™ usage.
+	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		// Welp, that went downhill fast.
+		w.Write(genErrorCode(450, "Database error."))
+		return
+	}
+
+	//client := sendgrid.NewSendClient(config.SendGridKey)
 
 	// Create maps for storage of mail.
 	mailPart := make(map[string]string)
 
-	// Parse form in preparation for finding mail.
-	err := r.ParseMultipartForm(-1)
+	// Parse form in preparation for finding ma	il.
+	err = r.ParseMultipartForm(-1)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for name, contents := range r.MultipartForm.Value {
-		if name[0] == 'm' {
-			log.Print("Message detected. :robot:\nName:", name)
+		if mailFormName.MatchString(name) {
+			log.Print("Message detected. Name: ", name)
 			mailPart[name] = contents[0]
 		}
 	}
@@ -50,13 +60,21 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		// POTENTIAL TODO: remove w from database?
 		var messageID string
 		var senderID string
+		var data string
+
+		messageID = senderID
+		senderID = messageID
 
 		// For every new line, handle as needed.
 		scanner := bufio.NewScanner(strings.NewReader(contents))
 		for scanner.Scan() {
 			line := scanner.Text()
-			potentialMailFrom := mailFrom.FindString(line)
-			if potentialMailFrom != "" {
+			// Go ahead and add it to this mail's overall data.
+			data += fmt.Sprintln(line)
+
+			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
+			if potentialMailFromWrapper != nil {
+				potentialMailFrom := potentialMailFromWrapper[1]
 				if potentialMailFrom == "w9999999999990000" {
 					w.Write(genErrorCode(351, "w9999999999990000 tried to send mail."))
 					break
@@ -67,63 +85,78 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			}
 
 			// -1 signifies all matches
-			potentialRecipient := rcptFrom.FindAllStringSubmatch(line, -1)[0]
-			if potentialRecipient != nil {
+			potentialRecipientWrapper := rcptFrom.FindAllStringSubmatch(line, -1)
+			if potentialRecipientWrapper != nil {
+				// We only need to work with the first match, which should be all we need.
+				potentialRecipient := potentialRecipientWrapper[0]
+
 				// layout:
-				// potentialRecipient[0] = w<16 digit ID>
-				// potentialRecipient[1] = domain being sent to
-				if potentialRecipient[1] == "wii.com" {
-					// We're not gonna allow you to send to a defunct domain.. ;P
-					// Add it to be removed anyway.
-					linesToRemove += fmt.Sprintln(line)
-					continue
-				} else if potentialRecipient[1] == config.SendGridDomain {
+				// potentialRecipient[0] = original matched string w/o groups
+				// potentialRecipient[1] = w<16 digit ID>
+				// potentialRecipient[2] = domain being sent to
+				if potentialRecipient[2] == "wii.com" {
+					// We're not gonna allow you to send to a defunct domain. ;P
+				} else if potentialRecipient[2] == config.SendGridDomain {
 					// Wii <-> Wii mail. We can handle this.
-					wiiRecipientIDs = append(wiiRecipientIDs, potentialRecipient[0][1:])
+					wiiRecipientIDs = append(wiiRecipientIDs, potentialRecipient[1])
 				} else {
 					// PC <-> Wii mail. We can't handle this, but SendGrid can.
-					pcRecipientIDs = append(pcRecipientIDs, potentialRecipient[0][1:])
+					email := fmt.Sprintf("%s@%s", potentialRecipient[1], potentialRecipient[2])
+					pcRecipientIDs = append(pcRecipientIDs, email)
 				}
 
+				log.Println(potentialRecipient[1])
 				linesToRemove += fmt.Sprintln(line)
 				continue
 			}
 
-			potentialMessageID := messageIDRegex.FindString(line)
-			if potentialMessageID != "" {
-				messageID = potentialMessageID
-				linesToRemove += fmt.Sprintln(line)
+			potentialMessageID := messageIDRegex.FindStringSubmatch(line)
+			if potentialMessageID != nil {
+				// We don't need to record this as it's part of DATA.
+				messageID = potentialMessageID[1]
 				continue
 			} else {
 				// We do need a message ID though.
 				messageID = uuid.New().String()
+				continue
 			}
 
-			potentialDataMessage := dataRegex.FindString(line)
-			if potentialDataMessage != "" {
+			potentialDataMessage := dataRegex.FindStringSubmatch(line)
+			if potentialDataMessage != nil {
 				// Party's over. Go home.
+				linesToRemove += fmt.Sprintln(line)
 				break
 			}
 
-			w.Write(genErrorCode(420, "Your Wii sent something I couldn't understand."))
+			w.Write(genErrorCode(351, "Your Wii sent something I couldn't understand."))
+			return
 		}
 		if err := scanner.Err(); err != nil {
-			w.Write(genErrorCode(666, "Issue iterating over strings."))
+			w.Write(genErrorCode(350, "Issue iterating over strings."))
+			return
+		}
+		mailContents := strings.Replace(data, linesToRemove, "", -1)
+
+		log.Print(wiiRecipientIDs)
+		// We're done figuring out the mail, now it's time to act as needed.
+		// For Wii recipients, we can just insert into the database.
+		for wiiRecipient := range wiiRecipientIDs {
+			_, err := stmt.Exec(senderID, mailContents, wiiRecipient, uuid.New().String(), messageID)
+			if err != nil {
+				w.Write(genErrorCode(450, "Database error."))
+				return
+			}
 		}
 
-
-		// We're done figuring out the mail, now it's time to act as needed.
-		
+		//for _ := range pcRecipientIDs {
+		//
+		//}
 	}
 }
 
 func genErrorCode(error int, reason string) []byte {
-	log.Println("[Warning] Encountered error ", error, " with reason ", reason)
+	log.Println("[Warning] Encountered error", error, "with reason", reason)
 	return []byte(fmt.Sprint(
 		"cd=", strconv.Itoa(error), "\n",
 		"msg=", reason, "\n"))
-}
-
-func handleSendGrid() {
-
 }
