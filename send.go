@@ -10,7 +10,6 @@ import (
 	"bufio"
 	"strings"
 	"github.com/google/uuid"
-	//"github.com/sendgrid/sendgrid-go"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
