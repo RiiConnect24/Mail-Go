@@ -10,11 +10,12 @@ import (
 	"bufio"
 	"strings"
 	"github.com/google/uuid"
+	"net/smtp"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
-var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
-var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
+var MailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
+var RcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 var messageIDRegex = regexp.MustCompile(`Message-Id:\s<([0-9a-fA-F]*)@(?:.*)>$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
@@ -24,7 +25,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		// Welp, that went downhill fast.
-		w.Write(genErrorCode(450, "Database error."))
+		w.Write([]byte(genNormalErrorCode(450, "Database error.")))
 		return
 	}
 
@@ -46,8 +47,11 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		}
 	}
 
+	eventualOutput := genNormalErrorCode(100, "Success.")
+	eventualOutput += fmt.Sprint("mlnum=", len(mailPart)-1, "\n")
+
 	// Handle the all mail! \o/
-	for _, contents := range mailPart {
+	for mailNumber, contents := range mailPart {
 		var linesToRemove string
 		// I'm making this a string for similar reasons as below.
 		// Plus it beats repeated `strconv.Itoa`s
@@ -77,11 +81,11 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 				continue
 			}
 
-			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
+			potentialMailFromWrapper := MailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
 				if potentialMailFrom == "w9999999999990000" {
-					w.Write(genErrorCode(351, "w9999999999990000 tried to send mail."))
+					eventualOutput += genMailErrorCode(mailNumber, 351, "w9999999999990000 tried to send mail.")
 					break
 				}
 				senderID = potentialMailFrom
@@ -90,7 +94,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			}
 
 			// -1 signifies all matches
-			potentialRecipientWrapper := rcptFrom.FindAllStringSubmatch(line, -1)
+			potentialRecipientWrapper := RcptFrom.FindAllStringSubmatch(line, -1)
 			if potentialRecipientWrapper != nil {
 				// We only need to work with the first match, which should be all we need.
 				potentialRecipient := potentialRecipientWrapper[0]
@@ -125,11 +129,11 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 				continue
 			}
 
-			w.Write(genErrorCode(351, "Your Wii sent something I couldn't understand."))
+			eventualOutput += genMailErrorCode(mailNumber, 351, "Your Wii sent something I couldn't understand.")
 			return
 		}
 		if err := scanner.Err(); err != nil {
-			w.Write(genErrorCode(350, "Issue iterating over strings."))
+			eventualOutput += genMailErrorCode(mailNumber, 350, "Issue iterating over strings.")
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
@@ -140,20 +144,57 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), messageID)
 			if err != nil {
-				w.Write(genErrorCode(450, "Database error."))
+				eventualOutput += genMailErrorCode(mailNumber, 450, "Database error.")
 				return
 			}
 		}
 
-		//for _ := range pcRecipientIDs {
-		//
-		//}
+		for _, pcRecipient := range pcRecipientIDs {
+			// Connect to the remote SMTP server.
+			host := "smtp.sendgrid.net"
+			auth := smtp.PlainAuth(
+				"",
+				"apikey",
+				config.SendGridKey,
+				host,
+			)
+			// The only reason we can get away with the following is
+			// because the Wii POSTs valid SMTP syntax.
+			err := smtp.SendMail(
+				fmt.Sprint(host, ":587"),
+				auth,
+				fmt.Sprintf("%s@%s", senderID, config.SendGridDomain),
+				[]string{pcRecipient},
+				[]byte(mailContents),
+			)
+			if err != nil {
+				log.Println(err)
+				eventualOutput += genMailErrorCode(mailNumber, 351, "Issue sending mail via SendGrid.")
+			}
+		}
+
+		// We did it!
+		eventualOutput += genMailErrorCode(mailNumber, 100, "Success.")
 	}
+
+	// We're completely done now.
+	w.Write([]byte(eventualOutput))
 }
 
-func genErrorCode(error int, reason string) []byte {
-	log.Println("[Warning] Encountered error", error, "with reason", reason)
-	return []byte(fmt.Sprint(
+func genMailErrorCode(mailNumber string, error int, reason string) string {
+	if error != 100 {
+		log.Println("[Warning] Encountered error", error, "with reason", reason)
+	}
+	return fmt.Sprint(
+		"cd", mailNumber, "=", strconv.Itoa(error), "\n",
+		"msg=", reason, "\n")
+}
+
+func genNormalErrorCode(error int, reason string) string {
+	if error != 100 {
+		log.Println("[Warning] Encountered error", error, "with reason", reason)
+	}
+	return fmt.Sprint(
 		"cd=", strconv.Itoa(error), "\n",
-		"msg=", reason, "\n"))
+		"msg=", reason, "\n")
 }
