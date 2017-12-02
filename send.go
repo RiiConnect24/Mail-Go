@@ -17,7 +17,6 @@ var mailFormName = regexp.MustCompile(`m\d+`)
 var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 var messageIDRegex = regexp.MustCompile(`Message-Id:\s<([0-9a-fA-F]*)@(?:.*)>$`)
-var dataRegex = regexp.MustCompile(`^DATA$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
 func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
@@ -69,8 +68,15 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		scanner := bufio.NewScanner(strings.NewReader(contents))
 		for scanner.Scan() {
 			line := scanner.Text()
-			// Go ahead and add it to this mail's overall data.
+			// Add it to this mail's overall data.
 			data += fmt.Sprintln(line)
+
+			if line == "DATA" {
+				// We don't actually need to do anything here,
+				// just carry on.
+				linesToRemove += fmt.Sprintln(line)
+				continue
+			}
 
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
@@ -105,7 +111,6 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 					pcRecipientIDs = append(pcRecipientIDs, email)
 				}
 
-				log.Println(potentialRecipient[1])
 				linesToRemove += fmt.Sprintln(line)
 				continue
 			}
@@ -121,13 +126,6 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 				continue
 			}
 
-			potentialDataMessage := dataRegex.FindStringSubmatch(line)
-			if potentialDataMessage != nil {
-				// Party's over. Go home.
-				linesToRemove += fmt.Sprintln(line)
-				break
-			}
-
 			w.Write(genErrorCode(351, "Your Wii sent something I couldn't understand."))
 			return
 		}
@@ -137,11 +135,11 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
 
-		log.Print(wiiRecipientIDs)
 		// We're done figuring out the mail, now it's time to act as needed.
 		// For Wii recipients, we can just insert into the database.
-		for wiiRecipient := range wiiRecipientIDs {
-			_, err := stmt.Exec(senderID, mailContents, wiiRecipient, uuid.New().String(), messageID)
+		for _, wiiRecipient := range wiiRecipientIDs {
+			// Splice wiiRecipient to drop w from 16 digit ID.
+			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), messageID)
 			if err != nil {
 				w.Write(genErrorCode(450, "Database error."))
 				return
