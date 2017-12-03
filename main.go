@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 // Config structure for `config.json`.
@@ -86,6 +87,9 @@ func main() {
 	http.HandleFunc("/cgi-bin/receive.cgi", receiveHandler)
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
 	http.HandleFunc("/cgi-bin/send.cgi", sendHandler)
+
+	// Allow systemd to run as notify
+	daemon.SdNotify(false, "READY=1")
 	// We do this to log all access to the page.
 	log.Fatal(http.ListenAndServe(global.BindTo, logRequest(http.DefaultServeMux)))
 }
