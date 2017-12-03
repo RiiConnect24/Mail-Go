@@ -29,8 +29,6 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		return
 	}
 
-	//client := sendgrid.NewSendClient(config.SendGridKey)
-
 	// Create maps for storage of mail.
 	mailPart := make(map[string]string)
 
@@ -48,7 +46,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	}
 
 	eventualOutput := genNormalErrorCode(100, "Success.")
-	eventualOutput += fmt.Sprint("mlnum=", len(mailPart)-1, "\n")
+	eventualOutput += fmt.Sprint("mlnum=", len(mailPart), "\n")
 
 	// Handle the all mail! \o/
 	for mailNumber, contents := range mailPart {
@@ -185,9 +183,10 @@ func genMailErrorCode(mailNumber string, error int, reason string) string {
 	if error != 100 {
 		log.Println("[Warning] Encountered error", error, "with reason", reason)
 	}
+
 	return fmt.Sprint(
-		"cd", mailNumber, "=", strconv.Itoa(error), "\n",
-		"msg=", reason, "\n")
+		"cd", mailNumber[1:], "=", strconv.Itoa(error), "\n",
+		"msg", mailNumber[1:], "=", reason, "\n")
 }
 
 func genNormalErrorCode(error int, reason string) string {
