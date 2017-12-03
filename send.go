@@ -14,9 +14,8 @@ import (
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
-var MailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
-var RcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
-var messageIDRegex = regexp.MustCompile(`Message-Id:\s<([0-9a-fA-F]*)@(?:.*)>$`)
+var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
+var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
 func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
@@ -75,7 +74,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 				continue
 			}
 
-			potentialMailFromWrapper := MailFrom.FindStringSubmatch(line)
+			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
 				if potentialMailFrom == "w9999999999990000" {
@@ -88,7 +87,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			}
 
 			// -1 signifies all matches
-			potentialRecipientWrapper := RcptFrom.FindAllStringSubmatch(line, -1)
+			potentialRecipientWrapper := rcptFrom.FindAllStringSubmatch(line, -1)
 			if potentialRecipientWrapper != nil {
 				// We only need to work with the first match, which should be all we need.
 				potentialRecipient := potentialRecipientWrapper[0]
@@ -130,35 +129,39 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		}
 
 		for _, pcRecipient := range pcRecipientIDs {
-			// Connect to the remote SMTP server.
-			host := "smtp.sendgrid.net"
-			auth := smtp.PlainAuth(
-				"",
-				"apikey",
-				config.SendGridKey,
-				host,
-			)
-			// The only reason we can get away with the following is
-			// because the Wii POSTs valid SMTP syntax.
-			err := smtp.SendMail(
-				fmt.Sprint(host, ":587"),
-				auth,
-				fmt.Sprintf("%s@%s", senderID, config.SendGridDomain),
-				[]string{pcRecipient},
-				[]byte(mailContents),
-			)
+			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
 				log.Println(err)
 				eventualOutput += genMailErrorCode(mailNumber, 351, "Issue sending mail via SendGrid.")
+			} else {
+				eventualOutput += genMailErrorCode(mailNumber, 100, "Success.")
 			}
 		}
-
-		// We did it!
-		eventualOutput += genMailErrorCode(mailNumber, 100, "Success.")
 	}
 
 	// We're completely done now.
 	w.Write([]byte(eventualOutput))
+}
+
+func handlePCmail (config Config, senderID string, pcRecipient string, mailContents string) error {
+	// Connect to the remote SMTP server.
+	host := "smtp.sendgrid.net"
+	auth := smtp.PlainAuth(
+		"",
+		"apikey",
+		config.SendGridKey,
+		host,
+	)
+	// The only reason we can get away with the following is
+	// because the Wii POSTs valid SMTP syntax.
+	return smtp.SendMail(
+		fmt.Sprint(host, ":587"),
+		auth,
+		fmt.Sprintf("%s@%s", senderID, config.SendGridDomain),
+		[]string{pcRecipient},
+		[]byte(mailContents),
+	)
+
 }
 
 func genMailErrorCode(mailNumber string, error int, reason string) string {
