@@ -1,16 +1,16 @@
 package main
 
 import (
-	"database/sql"
-	"net/http"
-	"log"
-	"regexp"
-	"fmt"
-	"strconv"
 	"bufio"
-	"strings"
+	"database/sql"
+	"fmt"
 	"github.com/google/uuid"
+	"log"
+	"net/http"
 	"net/smtp"
+	"regexp"
+	"strconv"
+	"strings"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
@@ -58,12 +58,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		// Yes, senderID is a string. >.<
 		// The database contains `w<16 digit ID>` due to previous PHP scripts.
 		// POTENTIAL TODO: remove w from database?
-		var messageID string
 		var senderID string
 		var data string
-
-		messageID = senderID
-		senderID = messageID
 
 		// For every new line, handle as needed.
 		scanner := bufio.NewScanner(strings.NewReader(contents))
@@ -115,20 +111,6 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 				linesToRemove += fmt.Sprintln(line)
 				continue
 			}
-
-			potentialMessageID := messageIDRegex.FindStringSubmatch(line)
-			if potentialMessageID != nil {
-				// We don't need to record this as it's part of DATA.
-				messageID = potentialMessageID[1]
-				continue
-			} else {
-				// We do need a message ID though.
-				messageID = uuid.New().String()
-				continue
-			}
-
-			eventualOutput += genMailErrorCode(mailNumber, 351, "Your Wii sent something I couldn't understand.")
-			return
 		}
 		if err := scanner.Err(); err != nil {
 			eventualOutput += genMailErrorCode(mailNumber, 350, "Issue iterating over strings.")
@@ -140,7 +122,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		// For Wii recipients, we can just insert into the database.
 		for _, wiiRecipient := range wiiRecipientIDs {
 			// Splice wiiRecipient to drop w from 16 digit ID.
-			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), messageID)
+			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
 				eventualOutput += genMailErrorCode(mailNumber, 450, "Database error.")
 				return
