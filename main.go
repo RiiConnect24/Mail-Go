@@ -53,6 +53,10 @@ func sendHandler(w http.ResponseWriter, r *http.Request) {
 	Send(w, r, db, global)
 }
 
+func accountHandler(w http.ResponseWriter, r *http.Request) {
+	Account(w, r, db)
+}
+
 func main() {
 	file, err := os.Open("config.json")
 	if err != nil {
@@ -77,6 +81,7 @@ func main() {
 	db = testDb
 
 	log.Println("Running...")
+	http.HandleFunc("/cgi-bin/account.cgi", accountHandler)
 	http.HandleFunc("/cgi-bin/check.cgi", checkHandler)
 	http.HandleFunc("/cgi-bin/receive.cgi", receiveHandler)
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
