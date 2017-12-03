@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"github.com/coreos/go-systemd/daemon"
+	"time"
 )
 
 // Config structure for `config.json`.
@@ -89,7 +90,26 @@ func main() {
 	http.HandleFunc("/cgi-bin/send.cgi", sendHandler)
 
 	// Allow systemd to run as notify
+	// Thanks to https://vincent.bernat.im/en/blog/2017-systemd-golang
+	// for the following things.
 	daemon.SdNotify(false, "READY=1")
+
+	go func() {
+		interval, err := daemon.SdWatchdogEnabled(false)
+		if err != nil || interval == 0 {
+			return
+		}
+		for {
+			for {
+				_, err := http.Get("http://127.0.0.1:8081") // ❸
+				if err == nil {
+					daemon.SdNotify(false, "WATCHDOG=1")
+				}
+				time.Sleep(interval / 3)
+			}
+		}
+	}()
+
 	// We do this to log all access to the page.
 	log.Fatal(http.ListenAndServe(global.BindTo, logRequest(http.DefaultServeMux)))
 }
