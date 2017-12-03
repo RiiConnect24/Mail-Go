@@ -10,6 +10,7 @@ import (
 	"os"
 )
 
+// Config structure for `config.json`.
 type Config struct {
 	Port           int
 	Host           string

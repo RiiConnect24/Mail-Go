@@ -108,7 +108,6 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 				}
 
 				linesToRemove += fmt.Sprintln(line)
-				continue
 			}
 		}
 		if err := scanner.Err(); err != nil {
@@ -143,7 +142,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	w.Write([]byte(eventualOutput))
 }
 
-func handlePCmail (config Config, senderID string, pcRecipient string, mailContents string) error {
+func handlePCmail(config Config, senderID string, pcRecipient string, mailContents string) error {
 	// Connect to the remote SMTP server.
 	host := "smtp.sendgrid.net"
 	auth := smtp.PlainAuth(

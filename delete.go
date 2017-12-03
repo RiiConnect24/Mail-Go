@@ -7,6 +7,7 @@ import (
 	"net/http"
 )
 
+// Delete handles delete requests of mail.
 func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	stmt, err := db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ? ORDER BY `timestamp` ASC LIMIT ?")
 	if err != nil {
