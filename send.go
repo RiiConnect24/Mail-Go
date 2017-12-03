@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/smtp"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -24,7 +23,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		// Welp, that went downhill fast.
-		w.Write([]byte(genNormalErrorCode(450, "Database error.")))
+		w.Write([]byte(GenNormalErrorCode(450, "Database error.")))
 		return
 	}
 
@@ -44,7 +43,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		}
 	}
 
-	eventualOutput := genNormalErrorCode(100, "Success.")
+	eventualOutput := GenNormalErrorCode(100, "Success.")
 	eventualOutput += fmt.Sprint("mlnum=", len(mailPart), "\n")
 
 	// Handle the all mail! \o/
@@ -78,7 +77,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
 				if potentialMailFrom == "w9999999999990000" {
-					eventualOutput += genMailErrorCode(mailNumber, 351, "w9999999999990000 tried to send mail.")
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999999990000 tried to send mail.")
 					break
 				}
 				senderID = potentialMailFrom
@@ -111,7 +110,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			eventualOutput += genMailErrorCode(mailNumber, 350, "Issue iterating over strings.")
+			eventualOutput += GenMailErrorCode(mailNumber, 350, "Issue iterating over strings.")
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
@@ -122,7 +121,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
-				eventualOutput += genMailErrorCode(mailNumber, 450, "Database error.")
+				eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
 				return
 			}
 		}
@@ -131,9 +130,9 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
 				log.Println(err)
-				eventualOutput += genMailErrorCode(mailNumber, 351, "Issue sending mail via SendGrid.")
+				eventualOutput += GenMailErrorCode(mailNumber, 351, "Issue sending mail via SendGrid.")
 			} else {
-				eventualOutput += genMailErrorCode(mailNumber, 100, "Success.")
+				eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
 			}
 		}
 	}
@@ -161,23 +160,4 @@ func handlePCmail(config Config, senderID string, pcRecipient string, mailConten
 		[]byte(mailContents),
 	)
 
-}
-
-func genMailErrorCode(mailNumber string, error int, reason string) string {
-	if error != 100 {
-		log.Println("[Warning] Encountered error", error, "with reason", reason)
-	}
-
-	return fmt.Sprint(
-		"cd", mailNumber[1:], "=", strconv.Itoa(error), "\n",
-		"msg", mailNumber[1:], "=", reason, "\n")
-}
-
-func genNormalErrorCode(error int, reason string) string {
-	if error != 100 {
-		log.Println("[Warning] Encountered error", error, "with reason", reason)
-	}
-	return fmt.Sprint(
-		"cd=", strconv.Itoa(error), "\n",
-		"msg=", reason, "\n")
 }
