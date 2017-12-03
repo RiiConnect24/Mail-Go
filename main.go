@@ -101,7 +101,7 @@ func main() {
 		}
 		for {
 			for {
-				_, err := http.Get("http://127.0.0.1:8081") // ❸
+				_, err := http.Get(global.BindTo) // ❸
 				if err == nil {
 					daemon.SdNotify(false, "WATCHDOG=1")
 				}
