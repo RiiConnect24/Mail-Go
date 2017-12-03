@@ -131,10 +131,9 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			if err != nil {
 				log.Println(err)
 				eventualOutput += GenMailErrorCode(mailNumber, 351, "Issue sending mail via SendGrid.")
-			} else {
-				eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
 			}
 		}
+		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
 	}
 
 	// We're completely done now.
