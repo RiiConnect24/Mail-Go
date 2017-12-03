@@ -110,7 +110,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			eventualOutput += GenMailErrorCode(mailNumber, 350, "Issue iterating over strings.")
+			eventualOutput += GenMailErrorCode(mailNumber, 351, "Issue iterating over strings.")
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
