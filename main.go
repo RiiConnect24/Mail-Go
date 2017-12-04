@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"os"
 	"github.com/coreos/go-systemd/daemon"
-	"time"
 )
 
 // Config structure for `config.json`.
@@ -40,7 +39,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
-	Check(w, r, global.Interval)
+	Check(w, r, db, global.Interval)
 }
 
 func receiveHandler(w http.ResponseWriter, r *http.Request) {
