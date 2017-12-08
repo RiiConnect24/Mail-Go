@@ -33,10 +33,6 @@ func Check(w http.ResponseWriter, r *http.Request, inter int) {
 		log.Fatal(err)
 	}
 
-	for key, value := range r.PostForm {
-		log.Printf("%s => %s", key, value[0])
-	}
-
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
 	result := GenNormalErrorCode(100, "Success.")
 	result += fmt.Sprint("res=", hmacKey, "\n")
