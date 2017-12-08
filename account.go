@@ -18,10 +18,15 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	r.ParseForm()
 
 	wiiID := r.Form.Get("mlid")
-	if wiiID[0:1] != "w" {
+	if wiiID == "" {
+		w.Write([]byte("At least humor us and use the correct syntax."))
+		return
+	} else if wiiID[0:1] != "w" {
 		w.Write([]byte(GenNormalErrorCode(610, "Invalid Wii Friend Code.")))
+		return
 	} else if len(wiiID) != 17 {
 		w.Write([]byte(GenNormalErrorCode(610, "Invalid Wii Friend Code.")))
+		return
 	}
 
 	mlchkid := RandStringBytesMaskImprSrc(32)
