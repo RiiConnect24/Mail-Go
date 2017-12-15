@@ -45,7 +45,6 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	mailNum := 0
 	var totalMailOutput string
 	amountOfMail := 0
 
@@ -81,7 +80,6 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			break
 		}
 
-		mailSize += len(mailOutput)
 		totalMailOutput += individualMail
 		amountOfMail++
 
@@ -91,6 +89,10 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			log.Fatal(err)
 		}
 	}
+
+	// Since we're done processing mail, set mailSize.
+	mailSize := len(totalMailOutput)
+
 	// Make sure nothing failed.
 	err = storedMail.Err()
 	if err != nil {
