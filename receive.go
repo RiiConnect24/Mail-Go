@@ -45,9 +45,9 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	var mailOutput string
 	mailNum := 0
-	mailSize := 0
+	var totalMailOutput string
+	amountOfMail := 0
 
 	// Statement to mark as sent once put in mail output
 	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` =?")
@@ -72,18 +72,18 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			// Hopefully not, but make sure the row layout is the same.
 			panic(err)
 		}
-		output := fmt.Sprint("\r\n--", wc24MimeBoundary, "\r\n")
-		output += "Content-Type: text/plain\r\n\r\n"
-		output += mail
+		individualMail := fmt.Sprint("\r\n--", wc24MimeBoundary, "\r\n")
+		individualMail += "Content-Type: text/plain\r\n\r\n"
+		individualMail += mail
 
 		// Don't add if the mail would exceed max size.
-		if (len(mailOutput) + len(output)) > maxsize {
+		if (len(totalMailOutput) + len(individualMail)) > maxsize {
 			break
 		}
 
-		mailOutput += output
-		mailNum++
 		mailSize += len(mailOutput)
+		totalMailOutput += individualMail
+		amountOfMail++
 
 		// We're committed at this point. Mark it that way in the db.
 		_, err := updateMailState.Exec(mailId)
@@ -103,10 +103,10 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		"This part is ignored.\r\n\r\n\r\n\n",
 		"cd=100\n",
 		"msg=Success.\n",
-		"mailnum=", mailNum, "\n",
+		"mailnum=", amountOfMail, "\n",
 		"mailsize=", mailSize, "\n",
-		"allnum=", mailNum, "\n",
-		mailOutput,
+		"allnum=", amountOfMail, "\n",
+		totalMailOutput,
 		"\r\n--", wc24MimeBoundary, "--\r\n")
 	w.Write([]byte(request))
 }
