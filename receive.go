@@ -107,7 +107,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		"mailsize=", mailSize, "\n",
 		"allnum=", mailNum, "\n",
 		mailOutput,
-		"--", wc24MimeBoundary, "--\r\n")
+		"\r\n--", wc24MimeBoundary, "--\r\n")
 	w.Write([]byte(request))
 }
 
