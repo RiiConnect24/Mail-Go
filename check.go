@@ -97,11 +97,11 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	if resultsLoop == 0 {
+	/* if resultsLoop == 0 {
 		// Looks like that user didn't exist.
 		w.Write([]byte(GenNormalErrorCode(220, "Invalid authentication.")))
 		return
-	}
+	} */
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
 	response := fmt.Sprint(GenNormalErrorCode(100, "Success."),
