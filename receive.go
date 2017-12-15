@@ -83,7 +83,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 		mailOutput += output
 		mailNum++
-		mailSize = len(mail)
+		mailSize += len(mail)
 
 		// We're committed at this point. Mark it that way in the db.
 		_, err := updateMailState.Exec(mailId)
