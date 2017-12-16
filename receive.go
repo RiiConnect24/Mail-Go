@@ -47,6 +47,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	var totalMailOutput string
 	amountOfMail := 0
+	mailSize := 0
 
 	// Statement to mark as sent once put in mail output
 	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` =?")
@@ -78,20 +79,20 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		// Don't add if the mail would exceed max size.
 		if (len(totalMailOutput) + len(individualMail)) > maxsize {
 			break
-		}
+		} else {
+			totalMailOutput += individualMail
+			amountOfMail++
 
-		totalMailOutput += individualMail
-		amountOfMail++
+			// Make mailSize reflect our actions.
+			mailSize = len(totalMailOutput)
 
-		// We're committed at this point. Mark it that way in the db.
-		_, err := updateMailState.Exec(mailId)
-		if err != nil {
-			log.Fatal(err)
+			// We're committed at this point. Mark it that way in the db.
+			_, err := updateMailState.Exec(mailId)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
-
-	// Since we're done processing mail, set mailSize.
-	mailSize := len(totalMailOutput)
 
 	// Make sure nothing failed.
 	err = storedMail.Err()
