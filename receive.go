@@ -56,7 +56,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	// Loop through mail and make the output.
-	wc24MimeBoundary := fmt.Sprint("BoundaryForDL", time.Now().Format("YmdHi"), "/", random(1000000, 9999999))
+	wc24MimeBoundary := fmt.Sprint("BoundaryForDL", fmt.Sprint(time.Now().Format("200601021504")), "/", random(1000000, 9999999))
 	defer storedMail.Close()
 	for storedMail.Next() {
 		// Mail is the content of the mail stored in the database.
