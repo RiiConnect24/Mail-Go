@@ -12,7 +12,7 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	stmt, err := db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ? ORDER BY `timestamp` ASC LIMIT ?")
 	if err != nil {
 		// Welp, that went downhill fast.
-		w.Write([]byte(GenNormalErrorCode(450, "Database error.")))
+		w.Write([]byte(GenNormalErrorCode(440, "Database error.")))
 		log.Fatal(err)
 	}
 	r.ParseForm()

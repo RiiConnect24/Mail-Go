@@ -25,14 +25,14 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	mlidWithW := r.Form.Get("mlid")
 	if len(mlidWithW) != 17 {
 		// 17 is size of 4 x 4 digits plus starting W
-		w.Write([]byte("If you're gonna try and interface with this script, at least have mlid the proper length."))
+		w.Write([]byte(GenNormalErrorCode(330, "If you're gonna try and interface with this script, at least have mlid the proper length.")))
 		return
 	}
 	mlid := mlidWithW[1:]
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
-		w.Write([]byte("maxsize needs to be an int."))
+		w.Write([]byte(GenNormalErrorCode(330, "maxsize needs to be an int.")))
 		return
 	}
 
