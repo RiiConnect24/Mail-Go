@@ -4,11 +4,11 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/coreos/go-systemd/daemon"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
 	"os"
-	"github.com/coreos/go-systemd/daemon"
 )
 
 // Config structure for `config.json`.

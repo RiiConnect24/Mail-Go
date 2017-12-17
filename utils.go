@@ -1,11 +1,11 @@
 package main
 
 import (
-	"time"
-	"math/rand"
 	"fmt"
-	"strconv"
 	"log"
+	"math/rand"
+	"strconv"
+	"time"
 )
 
 // https://stackoverflow.com/a/31832326/3874884
