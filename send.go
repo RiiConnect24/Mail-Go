@@ -30,10 +30,12 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	// Create maps for storage of mail.
 	mailPart := make(map[string]string)
 
-	// Parse form in preparation for finding ma	il.
+	// Parse form in preparation for finding mail.
 	err = r.ParseMultipartForm(-1)
 	if err != nil {
+		w.Write([]byte(GenNormalErrorCode(350, "Failed to parse mail.")))
 		log.Fatal(err)
+		return
 	}
 
 	for name, contents := range r.MultipartForm.Value {
