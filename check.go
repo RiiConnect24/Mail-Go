@@ -1,11 +1,11 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
-	"database/sql"
 )
 
 // Check handles adding the proper interval for check.cgi along with future

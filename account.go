@@ -2,9 +2,9 @@ package main
 
 import (
 	"database/sql"
-	"net/http"
 	"fmt"
 	"log"
+	"net/http"
 )
 
 func Account(w http.ResponseWriter, r *http.Request, db *sql.DB) {
