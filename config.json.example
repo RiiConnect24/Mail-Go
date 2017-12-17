@@ -7,5 +7,6 @@
   "Interval": 10,
   "BindTo": "mtwtest.rc24.xyz:80",
   "SendGridKey": "changeme",
-  "SendGridDomain": "changeme.xyz"
+  "SendGridDomain": "changeme.xyz",
+  "Debug": true
 }

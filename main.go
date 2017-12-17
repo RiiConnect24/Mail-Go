@@ -22,6 +22,7 @@ type Config struct {
 	BindTo         string
 	SendGridKey    string
 	SendGridDomain string
+	Debug          bool
 }
 
 var db *sql.DB
@@ -29,10 +30,12 @@ var global Config
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Printf("%s %s", r.Method, r.URL)
-		// TODO: remove header dumping
-		for name, test := range r.Header {
-			log.Printf("%s => %s", name, test)
+		if global.Debug {
+			log.Printf("%s %s", r.Method, r.URL)
+			// TODO: remove header dumping
+			for name, test := range r.Header {
+				log.Printf("%s => %s", name, test)
+			}
 		}
 		handler.ServeHTTP(w, r)
 	})

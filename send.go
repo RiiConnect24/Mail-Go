@@ -38,7 +38,6 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 
 	for name, contents := range r.MultipartForm.Value {
 		if mailFormName.MatchString(name) {
-			log.Print("Message detected. Name: ", name)
 			mailPart[name] = contents[0]
 		}
 	}
