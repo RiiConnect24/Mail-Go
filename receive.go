@@ -74,7 +74,6 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 		individualMail := fmt.Sprint("\r\n--", wc24MimeBoundary, "\r\n")
 		individualMail += "Content-Type: text/plain\r\n\r\n"
-		mail := strings.Replace(mail, "\n", "\r\n", -1)
 		individualMail += mail
 
 		// Don't add if the mail would exceed max size.
@@ -85,7 +84,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			amountOfMail++
 
 			// Make mailSize reflect our actions.
-			mailSize = len(mail)
+			mailSize += len(mail)
 
 			// We're committed at this point. Mark it that way in the db.
 			_, err := updateMailState.Exec(mailId)
