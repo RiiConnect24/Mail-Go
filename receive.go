@@ -80,7 +80,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		if (len(totalMailOutput) + len(individualMail)) > maxsize {
 			break
 		} else {
-			totalMailOutput += individualMail
+			totalMailOutput += mail
 			amountOfMail++
 
 			// Make mailSize reflect our actions.
