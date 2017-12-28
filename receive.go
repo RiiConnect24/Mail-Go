@@ -81,11 +81,11 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		if (len(totalMailOutput) + len(individualMail)) > maxsize {
 			break
 		} else {
-			totalMailOutput += mail
+			totalMailOutput += individualMail
 			amountOfMail++
 
 			// Make mailSize reflect our actions.
-			mailSize = len(totalMailOutput)
+			mailSize = len(mail)
 
 			// We're committed at this point. Mark it that way in the db.
 			_, err := updateMailState.Exec(mailId)
