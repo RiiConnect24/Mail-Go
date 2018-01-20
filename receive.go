@@ -76,6 +76,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		individualMail := fmt.Sprint("\r\n--", wc24MimeBoundary, "\r\n")
 		individualMail += "Content-Type: text/plain\r\n\r\n"
 		mail = strings.Replace(mail, "\n", "\r\n", -1)
+		mail = strings.Replace(mail, "\r\r\n", "\r\n", -1)
 		individualMail += mail
 
 		// Don't add if the mail would exceed max size.
