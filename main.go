@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/coreos/go-systemd/daemon"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
@@ -90,11 +89,6 @@ func main() {
 	http.HandleFunc("/cgi-bin/receive.cgi", receiveHandler)
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
 	http.HandleFunc("/cgi-bin/send.cgi", sendHandler)
-
-	// Allow systemd to run as notify
-	// Thanks to https://vincent.bernat.im/en/blog/2017-systemd-golang
-	// for the following things.
-	daemon.SdNotify(false, "READY=1")
 
 	// We do this to log all access to the page.
 	log.Fatal(http.ListenAndServe(global.BindTo, logRequest(http.DefaultServeMux)))
