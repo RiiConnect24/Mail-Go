@@ -3,7 +3,7 @@
 
 This is an effort to rewrite soon-to-be-legacy PHP scripts into golang.
 Some reasons why:
-- `apache2` has the fun tendancy to go overboard on memory usage.
+- `apache2` has the fun tendency to go overboard on memory usage.
 - `go` is fun.
 
 # How to develop
