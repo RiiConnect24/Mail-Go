@@ -1,6 +1,6 @@
 {
   "Port": 3306,
-  "Host": "localhost",
+  "Host": "database",
   "Username": "rc24",
   "Password": "changeme",
   "DBName": "WC24Mail",
