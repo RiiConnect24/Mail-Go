@@ -32,10 +32,6 @@ func logRequest(handler http.Handler) http.Handler {
 		if global.Debug {
 			// Dump path, etc
 			log.Printf("%s %s", r.Method, r.URL)
-
-			for name, test := range r.Header {
-				log.Printf("%s => %s", name, test)
-			}
 		}
 		handler.ServeHTTP(w, r)
 	})
