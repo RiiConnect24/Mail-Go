@@ -75,6 +75,12 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 		individualMail := fmt.Sprint("\r\n--", wc24MimeBoundary, "\r\n")
 		individualMail += "Content-Type: text/plain\r\n\r\n"
+
+		// In the RiiConnect24 database, some mail use CRLF
+		// instead of a Unix newline.
+		// We go ahead and remove this from the mail
+		// in order to not confuse the Wii.
+		// BUG(larsenv): make the database not do this
 		mail = strings.Replace(mail, "\n", "\r\n", -1)
 		mail = strings.Replace(mail, "\r\r\n", "\r\n", -1)
 		individualMail += mail

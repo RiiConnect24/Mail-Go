@@ -30,8 +30,9 @@ var global Config
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if global.Debug {
+			// Dump path, etc
 			log.Printf("%s %s", r.Method, r.URL)
-			// TODO: remove header dumping
+
 			for name, test := range r.Header {
 				log.Printf("%s => %s", name, test)
 			}
@@ -61,7 +62,7 @@ func accountHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	file, err := os.Open("config.json")
+	file, err := os.Open("config/config.json")
 	if err != nil {
 		panic(err)
 	}
