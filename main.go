@@ -25,7 +25,6 @@ type Config struct {
 	Debug          bool
 }
 
-var db *sql.DB
 var global Config
 
 func logRequest(handler http.Handler) http.Handler {
