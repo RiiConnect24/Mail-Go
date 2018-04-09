@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/coreos/go-systemd/daemon"
 	_ "github.com/go-sql-driver/mysql"
 	"log"
 	"net/http"
@@ -24,8 +25,8 @@ type Config struct {
 	Debug          bool
 }
 
-var db *sql.DB
 var global Config
+var db *sql.DB
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -38,7 +39,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
-	Check(w, r, global.Interval)
+	Check(w, r, db, global.Interval)
 }
 
 func receiveHandler(w http.ResponseWriter, r *http.Request) {

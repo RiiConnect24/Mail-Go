@@ -9,11 +9,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"strings"
 )
 
 // Receive loops through stored mail and formulates a response.
 // Then, if applicable, marks the mail as received.
 func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	Auth(w, r, false)
 	// Parse form.
 	err := r.ParseForm()
 	if err != nil {
