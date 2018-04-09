@@ -30,10 +30,12 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	// Create maps for storage of mail.
 	mailPart := make(map[string]string)
 
-	// Parse form in preparation for finding ma	il.
+	// Parse form in preparation for finding mail.
 	err = r.ParseMultipartForm(-1)
 	if err != nil {
+		w.Write([]byte(GenNormalErrorCode(350, "Failed to parse mail.")))
 		log.Fatal(err)
+		return
 	}
 
 	for name, contents := range r.MultipartForm.Value {
@@ -109,7 +111,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			eventualOutput += GenMailErrorCode(mailNumber, 351, "Issue iterating over strings.")
+			eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue iterating over strings.")
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
@@ -129,7 +131,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
 				log.Println(err)
-				eventualOutput += GenMailErrorCode(mailNumber, 351, "Issue sending mail via SendGrid.")
+				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue sending mail via SendGrid.")
 			}
 		}
 		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")

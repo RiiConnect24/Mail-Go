@@ -7,6 +7,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	"strings"
 )
@@ -27,14 +28,14 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	mlidWithW := r.Form.Get("mlid")
 	if len(mlidWithW) != 17 {
 		// 17 is size of 4 x 4 digits plus starting W
-		w.Write([]byte("If you're gonna try and interface with this script, at least have mlid the proper length."))
+		w.Write([]byte(GenNormalErrorCode(330, "If you're gonna try and interface with this script, at least have mlid the proper length.")))
 		return
 	}
 	mlid := mlidWithW[1:]
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
-		w.Write([]byte("maxsize needs to be an int."))
+		w.Write([]byte(GenNormalErrorCode(330, "maxsize needs to be an int.")))
 		return
 	}
 
@@ -58,7 +59,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	// Loop through mail and make the output.
-	wc24MimeBoundary := fmt.Sprint("BoundaryForDL", fmt.Sprint(time.Now().Format("200601021504")), "/", random(1000000, 9999999))
+	wc24MimeBoundary := fmt.Sprint("BoundaryForDL", time.Now().Format("200601021504"), "/", random(1000000, 9999999))
 	defer storedMail.Close()
 	for storedMail.Next() {
 		// Mail is the content of the mail stored in the database.
@@ -76,7 +77,15 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 		individualMail := fmt.Sprint("\r\n--", wc24MimeBoundary, "\r\n")
 		individualMail += "Content-Type: text/plain\r\n\r\n"
-		individualMail += strings.Replace(mail, "\n", "\r\n", -1)
+
+		// In the RiiConnect24 database, some mail use CRLF
+		// instead of a Unix newline.
+		// We go ahead and remove this from the mail
+		// in order to not confuse the Wii.
+		// BUG(larsenv): make the database not do this
+		mail = strings.Replace(mail, "\n", "\r\n", -1)
+		mail = strings.Replace(mail, "\r\r\n", "\r\n", -1)
+		individualMail += mail
 
 		// Don't add if the mail would exceed max size.
 		if (len(totalMailOutput) + len(individualMail)) > maxsize {
@@ -86,7 +95,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			amountOfMail++
 
 			// Make mailSize reflect our actions.
-			mailSize = len(totalMailOutput)
+			mailSize += len(mail)
 
 			// We're committed at this point. Mark it that way in the db.
 			_, err := updateMailState.Exec(mailId)

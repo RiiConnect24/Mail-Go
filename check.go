@@ -105,9 +105,10 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	} */
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
-	response := fmt.Sprint(GenNormalErrorCode(100, "Success."),
-		"res=", hmacKey, "\n",
-		"mail.flag=", mailFlag, "\n",
-		"interval=", interval)
-	w.Write([]byte(response))
+	result := GenNormalErrorCode(100, "Success.")
+	result += fmt.Sprint("res=", hmacKey, "\n")
+	// Random, non-zero string until we start checking
+	result += fmt.Sprint("mail.flag=", RandStringBytesMaskImprSrc(33), "\n")
+	result += fmt.Sprint("interval=", interval)
+	w.Write([]byte(result))
 }

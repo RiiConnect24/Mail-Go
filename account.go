@@ -12,20 +12,20 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// TODO: figure out actual mlid generation
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(450, "Database error.")))
+		w.Write([]byte(GenNormalErrorCode(410, "Database error.")))
 		log.Fatal(err)
 	}
 	r.ParseForm()
 
 	wiiID := r.Form.Get("mlid")
 	if wiiID == "" {
-		w.Write([]byte("At least humor us and use the correct syntax."))
+		w.Write([]byte(GenNormalErrorCode(310, "At least humor us and use the correct syntax.")))
 		return
 	} else if wiiID[0:1] != "w" {
-		w.Write([]byte(GenNormalErrorCode(610, "Invalid Wii Friend Code.")))
+		w.Write([]byte(GenNormalErrorCode(310, "Invalid Wii Friend Code.")))
 		return
 	} else if len(wiiID) != 17 {
-		w.Write([]byte(GenNormalErrorCode(610, "Invalid Wii Friend Code.")))
+		w.Write([]byte(GenNormalErrorCode(310, "Invalid Wii Friend Code.")))
 		return
 	}
 
@@ -34,7 +34,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	_, err = stmt.Exec(wiiID, mlchkid, passwd)
 
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(450, "Database error.")))
+		w.Write([]byte(GenNormalErrorCode(410, "Database error.")))
 		log.Fatal(err)
 	} else {
 		w.Write([]byte(fmt.Sprint("\n",

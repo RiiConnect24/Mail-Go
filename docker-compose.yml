@@ -1,0 +1,26 @@
+version: "3"
+
+services:
+  mail:
+    build: .
+    # Mail-Go runs in /, and it looks for config in the current dir. Hence /config
+    volumes:
+      - ./config:/config
+    ports:
+      # Container 80 -> Host 8080
+      - "8080:80"
+    # We must wait for the DB to import/etc before starting ourselves.
+    depends_on:
+     - "database"
+  database:
+    image: mysql
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+      MYSQL_USER: rc24
+      MYSQL_PASSWORD: changeme
+    volumes:
+      - mail_data:/var/lib/mysql
+      - ./schema/:/docker-entrypoint-initdb.d/:ro
+
+volumes:
+  mail_data:

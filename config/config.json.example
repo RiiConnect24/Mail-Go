@@ -1,11 +1,11 @@
 {
   "Port": 3306,
-  "Host": "localhost",
+  "Host": "database",
   "Username": "rc24",
   "Password": "changeme",
   "DBName": "WC24Mail",
   "Interval": 10,
-  "BindTo": "mtwtest.rc24.xyz:80",
+  "BindTo": ":80",
   "SendGridKey": "changeme",
   "SendGridDomain": "changeme.xyz",
   "Debug": true
