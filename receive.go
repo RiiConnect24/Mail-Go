@@ -9,7 +9,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"strings"
 )
 
 // Receive loops through stored mail and formulates a response.

@@ -55,7 +55,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 	// By default, we'll assume there's no mail.
-	mailFlag := "0"
+	// mailFlag := "0"
 	resultsLoop := 0
 
 	// Scan through returned rows.
@@ -87,7 +87,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		}
 
 		// Set mail flag to number of mail taken from database
-		mailFlag = strconv.Itoa(size)
+		// mailFlag = strconv.Itoa(size)
 		resultsLoop++
 	}
 
@@ -105,10 +105,10 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	} */
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
-	result := GenNormalErrorCode(100, "Success.")
-	result += fmt.Sprint("res=", hmacKey, "\n")
+	response := GenNormalErrorCode(100, "Success.")
+	response += fmt.Sprint("res=", hmacKey, "\n")
 	// Random, non-zero string until we start checking
-	result += fmt.Sprint("mail.flag=", RandStringBytesMaskImprSrc(33), "\n")
-	result += fmt.Sprint("interval=", interval)
-	w.Write([]byte(result))
+	response += fmt.Sprint("mail.flag=", RandStringBytesMaskImprSrc(33), "\n")
+	response += fmt.Sprint("interval=", interval)
+	w.Write([]byte(response))
 }
