@@ -12,6 +12,7 @@ import (
 // challenge solving and future mail existence checking.
 // BUG(spotlightishere): Challenge solving isn't implemented whatsoever.
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
+	Auth(w, r, true)
 	stmt, err := db.Prepare("SELECT mlid FROM accounts WHERE mlchkid=?")
 	if err != nil {
 		w.Write([]byte(GenNormalErrorCode(420, "Unable to formulate authentication statement.")))

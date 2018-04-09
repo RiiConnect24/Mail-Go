@@ -14,8 +14,6 @@ import (
 // https://stackoverflow.com/a/31832326/3874884
 var src = rand.NewSource(time.Now().UnixNano())
 
-var db *sql.DB
-
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
 const (
 	letterIdxBits = 6                    // 6 bits to represent a letter index
@@ -65,7 +63,7 @@ func GenNormalErrorCode(error int, reason string) string {
 
 func AccInsert(r *http.Request) sql.Result {
 	mlchkid, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("mlchkid")), 10)
-	insertAcc, err := db.Exec("INSERT INTO `accounts` (`mlid`, `password`, `mlchkid`) VALUES (?, ?, ?)", r.Form.Get("mlid"), nil, mlchkid)
+	insertAcc, err := db.Exec("INSERT INTO `accounts` (`mlid`, `passwd`, `mlchkid`) VALUES (?, ?, ?)", r.Form.Get("mlid"), nil, mlchkid)
 	if err != nil {
 		log.Fatal(err)
 	}

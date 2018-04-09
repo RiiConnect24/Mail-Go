@@ -26,6 +26,7 @@ type Config struct {
 }
 
 var global Config
+var db *sql.DB
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
