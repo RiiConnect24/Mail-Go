@@ -65,7 +65,7 @@ func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
 	var mlchkid []byte
 	var passwd []byte
 
-	err := db.QueryRow("SELECT passwd,mlchkid FROM `accounts` WHERE `mlid` =?", "w1111111111111111").Scan(&passwd, &mlchkid)
+	err := db.QueryRow("SELECT passwd,mlchkid FROM `accounts` WHERE `mlid` = ?", r.Form.Get("mlid")).Scan(&passwd, &mlchkid)
 
 	if err == sql.ErrNoRows {
 		Account(w, r, db, mode)

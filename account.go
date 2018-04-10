@@ -41,7 +41,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			"mlchkid=", mlchkid, "\n")))
 	} else if mode > 0 {
 		if mode == 1 {
-			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
+			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`, `mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 
 			mlchkid, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("mlchkid")), bcrypt.DefaultCost)
 			passwd := ""
