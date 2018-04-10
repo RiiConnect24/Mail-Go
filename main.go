@@ -55,7 +55,7 @@ func sendHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func accountHandler(w http.ResponseWriter, r *http.Request) {
-	Account(w, r, db)
+	Account(w, r, db, 0)
 }
 
 func main() {

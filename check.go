@@ -12,7 +12,6 @@ import (
 // challenge solving and future mail existence checking.
 // BUG(spotlightishere): Challenge solving isn't implemented whatsoever.
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
-	Auth(w, r, true)
 	stmt, err := db.Prepare("SELECT mlid FROM accounts WHERE mlchkid=?")
 	if err != nil {
 		w.Write([]byte(GenNormalErrorCode(420, "Unable to formulate authentication statement.")))
@@ -36,24 +35,34 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	// Parse form in preparation for finding mail.
 	err = r.ParseForm()
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(330, "Unable to parse parameters.")))
+		w.Write([]byte(GenNormalErrorCode(320, "Unable to parse parameters.")))
 		log.Fatal(err)
+		return
+	}
+
+	auth := Auth(w, r, 1)
+
+	if auth == 2 {
+		w.Write([]byte(GenNormalErrorCode(220, "An authentication error occurred.")))
 		return
 	}
 
 	mlchkid := r.Form.Get("mlchkid")
 	if mlchkid == "" {
-		w.Write([]byte(GenNormalErrorCode(330, "Unable to parse parameters.")))
+		w.Write([]byte(GenNormalErrorCode(320, "Unable to parse parameters.")))
 		return
 	}
 
 	// Check mlchkid
 	result, err := stmt.Query(mlchkid)
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(330, "Unable to parse parameters.")))
+		w.Write([]byte(GenNormalErrorCode(320, "Unable to parse parameters.")))
 		log.Fatal(err)
 		return
 	}
+
+	Account(w, r, db, 1)
+
 	// By default, we'll assume there's no mail.
 	// mailFlag := "0"
 	resultsLoop := 0

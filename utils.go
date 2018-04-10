@@ -61,59 +61,29 @@ func GenNormalErrorCode(error int, reason string) string {
 		"msg=", reason, "\n")
 }
 
-func AccInsert(r *http.Request) sql.Result {
-	mlchkid, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("mlchkid")), 10)
-	insertAcc, err := db.Exec("INSERT INTO `accounts` (`mlid`, `passwd`, `mlchkid`) VALUES (?, ?, ?)", r.Form.Get("mlid"), nil, mlchkid)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return insertAcc
-}
+func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
+	var mlchkid []byte
+	var passwd []byte
 
-func AccQuery(r *http.Request) *sql.Row {
-	stmt := db.QueryRow("SELECT * FROM `accounts` WHERE `mlid` =?", r.Form.Get("mlid"))
-	return stmt
-}
+	err := db.QueryRow("SELECT passwd,mlchkid FROM `accounts` WHERE `mlid` =?", "w1111111111111111").Scan(&passwd, &mlchkid)
 
-func AccUpdate(r *http.Request) int {
-	passwd, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("passwd")),10)
-	if err != nil {
-		log.Fatal(err)
-	}
-	_, err2 := db.Exec("UPDATE `accounts` SET `password` = ? WHERE `mlid` = ?", passwd, r.Form.Get("mlid"))
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-	return 0
-}
-
-func Auth(w http.ResponseWriter, r *http.Request, isCheck bool) {
-	stmt := AccQuery(r)
-	type Login struct {
-		mlid, mlchkid, passwd []byte
-	}
-	var l Login
-	err := stmt.Scan(&l.mlid, &l.mlchkid, &l.passwd)
 	if err == sql.ErrNoRows {
-		if isCheck {
-			AccInsert(r)
-			AccQuery(r)
-			return
+		Account(w, r, db, mode)
+		return 1
+	} else if err != nil {
+		GenNormalErrorCode(410, "Database error.")
+		log.Fatal(err)
+	}
+
+	if mode == 1 {
+		if bcrypt.CompareHashAndPassword([]byte(mlchkid), []byte(r.Form.Get("mlchkid"))) != nil {
+			return 2
+		}
+	} else if mode == 2 {
+		if bcrypt.CompareHashAndPassword([]byte(passwd), []byte(r.Form.Get("passwd"))) != nil {
+			return 2
 		}
 	}
-	if isCheck {
-		if bcrypt.CompareHashAndPassword(l.mlchkid, []byte(r.Form.Get("mlchkid"))) != nil {
-			w.Write([]byte("Couldn't authenticate you.")) // Change later
-			return
-		}
-	} else {
-		if l.passwd == nil {
-			AccUpdate(r)
-			return
-		}
-		if bcrypt.CompareHashAndPassword(l.passwd, []byte(r.Form.Get("passwd"))) != nil {
-			w.Write([]byte("Couldn't authenticate you.")) // Change later
-			return
-		}
-	}
+
+	return 0
 }
