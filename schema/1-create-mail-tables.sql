@@ -26,10 +26,9 @@ DROP TABLE IF EXISTS `accounts`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `accounts` (
   `mlid` varchar(17) NOT NULL,
-  `passwd` varchar(16) DEFAULT NULL,
-  `mlchkid` varchar(32) DEFAULT NULL,
-  `ip` int(11) DEFAULT NULL COMMENT 'Long2IP - used for associating check script with send/receive/etc',
-  UNIQUE KEY `mlid` (`mlid`),
+  `passwd` varchar(60) DEFAULT NULL,
+  `mlchkid` varchar(60) DEFAULT NULL,
+  PRIMARY KEY `mlid` (`mlid`),
   UNIQUE KEY `mlchkid` (`mlchkid`),
   UNIQUE KEY `passwd` (`passwd`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1 COMMENT='WiiConnect24 "Accounts"';

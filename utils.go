@@ -7,7 +7,8 @@ import (
 	"math/rand"
 	"strconv"
 	"time"
-	 "golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/bcrypt"
+	_ "github.com/go-sql-driver/mysql"
 	"net/http"
 )
 

@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"golang.org/x/crypto/bcrypt"
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
@@ -42,6 +43,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 	} else if mode > 0 {
 		if mode == 1 {
 			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`, `mlchkid`, `passwd` ) VALUES (?, ?, ?)")
+			defer stmt.Close()
 
 			mlchkid, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("mlchkid")), bcrypt.DefaultCost)
 			passwd := ""
@@ -53,6 +55,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			}
 		} else if mode == 2 {
 			stmt, err := db.Prepare("UPDATE `accounts` SET `passwd` = ? WHERE `mlid` = ?")
+			defer stmt.Close()
 
 			if err == sql.ErrNoRows {
 				w.Write([]byte("Not registered yet.")) // Replace
