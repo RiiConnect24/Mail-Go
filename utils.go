@@ -81,7 +81,7 @@ func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
 		}
 	} else if mode == 2 {
 		if bcrypt.CompareHashAndPassword([]byte(passwd), []byte(r.Form.Get("passwd"))) != nil {
-			return 2
+			return 3
 		}
 	}
 

@@ -17,6 +17,13 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	r.ParseForm()
 
+	auth := Auth(w, r, 2)
+
+	if auth == 3 {
+		w.Write([]byte(GenNormalErrorCode(240, "An authentication error occurred.")))
+		return
+	}
+
 	wiiID := r.Form.Get("mlid")
 	delnum := r.Form.Get("delnum")
 	_, err = stmt.Exec(wiiID, delnum)

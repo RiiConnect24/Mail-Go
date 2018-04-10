@@ -21,6 +21,13 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		log.Fatal(err)
 	}
 
+	auth := Auth(w, r, 2)
+
+	if auth == 3 {
+		w.Write([]byte(GenNormalErrorCode(230, "An authentication error occurred.")))
+		return
+	}
+
 	// Go expects multiple values for a key.
 	// We take the first, and then we use
 	// splicing to take char 1 -> end

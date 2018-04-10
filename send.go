@@ -47,7 +47,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	eventualOutput := GenNormalErrorCode(100, "Success.")
 	eventualOutput += fmt.Sprint("mlnum=", len(mailPart), "\n")
 
-	// Handle the all mail! \o/
+	// Handle all the mail! \o/
 	for mailNumber, contents := range mailPart {
 		var linesToRemove string
 		// I'm making this a string for similar reasons as below.
