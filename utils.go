@@ -68,7 +68,7 @@ func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
 
 	err := db.QueryRow("SELECT passwd,mlchkid FROM `accounts` WHERE `mlid` = ?", r.Form.Get("mlid")).Scan(&passwd, &mlchkid)
 
-	if err == sql.ErrNoRows {
+	if err == sql.ErrNoRows || passwd == nil {
 		Account(w, r, db, mode)
 		return 1
 	} else if err != nil {
