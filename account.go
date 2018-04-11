@@ -62,8 +62,6 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 
 			passwd, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("passwd")), bcrypt.DefaultCost)
 
-			log.Print(passwd)
-
 			_, err = stmt.Exec(passwd, wiiID)
 			if err != nil {
 				GenNormalErrorCode(410, "Database error.")
