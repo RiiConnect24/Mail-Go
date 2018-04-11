@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"time"
 	"golang.org/x/crypto/bcrypt"
 	_ "github.com/go-sql-driver/mysql"
+	"strings"
 )
 
 // https://stackoverflow.com/a/31832326/3874884
@@ -66,8 +66,7 @@ func GenNormalErrorCode(error int, reason string) string {
 func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
 	// We're using the IP to associate a mlchkid with a password.
 
-	res, _ := http.Get("https://api.ipify.org")
-	ip, _ := ioutil.ReadAll(res.Body)
+	ip := strings.Split(r.Header.Get("X-Forwarded-For"), ", ")[0]
 
 	var mlchkid []byte
 	var passwd []byte
