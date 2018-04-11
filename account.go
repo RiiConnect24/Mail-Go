@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strings"
 	"golang.org/x/crypto/bcrypt"
 	_ "github.com/go-sql-driver/mysql"
 )
@@ -36,8 +37,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 
 	// We're using the IP to associate a mlchkid with a password.
 
-	res, _ := http.Get("https://api.ipify.org")
-	ip, _ := ioutil.ReadAll(res.Body)
+	ip := strings.Split(r.Header.Get("X-Forwarded-For"), ", ")[0]
 
 	if mode == 0 {
 		mlchkid := RandStringBytesMaskImprSrc(32)
