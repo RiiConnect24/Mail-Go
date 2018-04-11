@@ -119,7 +119,6 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		panic(err)
 	}
 
-	w.Header().Add("Content-Type", fmt.Sprint("multipart/mixed; boundary=", wc24MimeBoundary))
 	request := fmt.Sprint("--", wc24MimeBoundary, "\r\n",
 		"Content-Type: text/plain\r\n\r\n",
 		"This part is ignored.\r\n\r\n\r\n\n",
