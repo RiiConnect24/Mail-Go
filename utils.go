@@ -78,7 +78,7 @@ func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
 		return 1
 	} else if err != nil {
 		GenNormalErrorCode(410, "Database error.")
-		log.Fatal(err)
+		log.Print(err)
 	}
 
 	if mode == 1 {

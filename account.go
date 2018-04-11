@@ -57,7 +57,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			_, err = stmt.Exec(mlchkid, ip)
 			if err != nil {
 				GenNormalErrorCode(410, "Database error.")
-				log.Fatal(err)
+				log.Print(err)
 			}
 		} else if mode == 2 {
 			stmt, err := db.Prepare("UPDATE `accounts` SET `mlid` = ?, `passwd` = ? WHERE `ip` = INET_ATON(?)")
@@ -72,7 +72,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			_, err = stmt.Exec(wiiID, passwd, ip)
 			if err != nil {
 				GenNormalErrorCode(410, "Database error.")
-				log.Fatal(err)
+				log.Print(err)
 			}
 		}
 	}
