@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"golang.org/x/crypto/bcrypt"
@@ -31,6 +32,11 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 	// mode 1: check.cgi call
 	// mode 2: send.cgi call or receive.cgi call
 
+	// We're using the IP to associate a mlchkid with a password.
+
+	res, _ := http.Get("https://api.ipify.org")
+	ip, _ := ioutil.ReadAll(res.Body)
+
 	if mode == 0 {
 		mlchkid := RandStringBytesMaskImprSrc(32)
 		passwd := RandStringBytesMaskImprSrc(16)
@@ -42,18 +48,18 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			"mlchkid=", mlchkid, "\n")))
 	} else if mode > 0 {
 		if mode == 1 {
-			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`, `mlchkid` ) VALUES (?, ?)")
+			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlchkid`, `ip` ) VALUES (?, INET_ATON(?))")
 			defer stmt.Close()
 
 			mlchkid, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("mlchkid")), bcrypt.DefaultCost)
 
-			_, err = stmt.Exec(wiiID, mlchkid)
+			_, err = stmt.Exec(mlchkid, ip)
 			if err != nil {
 				GenNormalErrorCode(410, "Database error.")
 				log.Fatal(err)
 			}
 		} else if mode == 2 {
-			stmt, err := db.Prepare("UPDATE `accounts` SET `passwd` = ? WHERE `mlid` = ?")
+			stmt, err := db.Prepare("UPDATE `accounts` SET `mlid` = ?, `passwd` = ? WHERE `ip` = INET_ATON(?)")
 			defer stmt.Close()
 
 			if err == sql.ErrNoRows {
@@ -62,7 +68,7 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 
 			passwd, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("passwd")), bcrypt.DefaultCost)
 
-			_, err = stmt.Exec(passwd, wiiID)
+			_, err = stmt.Exec(wiiID, passwd, ip)
 			if err != nil {
 				GenNormalErrorCode(410, "Database error.")
 				log.Fatal(err)
