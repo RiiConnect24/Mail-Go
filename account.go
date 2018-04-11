@@ -42,13 +42,12 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			"mlchkid=", mlchkid, "\n")))
 	} else if mode > 0 {
 		if mode == 1 {
-			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`, `mlchkid`, `passwd` ) VALUES (?, ?, ?)")
+			stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`, `mlchkid` ) VALUES (?, ?)")
 			defer stmt.Close()
 
 			mlchkid, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("mlchkid")), bcrypt.DefaultCost)
-			passwd := ""
 
-			_, err = stmt.Exec(wiiID, mlchkid, passwd)
+			_, err = stmt.Exec(wiiID, mlchkid)
 			if err != nil {
 				GenNormalErrorCode(410, "Database error.")
 				log.Fatal(err)
@@ -62,6 +61,8 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 			}
 
 			passwd, err := bcrypt.GenerateFromPassword([]byte(r.Form.Get("passwd")), bcrypt.DefaultCost)
+
+			log.Print(passwd)
 
 			_, err = stmt.Exec(passwd, wiiID)
 			if err != nil {

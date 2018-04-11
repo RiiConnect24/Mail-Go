@@ -14,7 +14,6 @@ import (
 // Receive loops through stored mail and formulates a response.
 // Then, if applicable, marks the mail as received.
 func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	Auth(w, r, 2)
 	// Parse form.
 	err := r.ParseForm()
 	if err != nil {
