@@ -17,15 +17,17 @@ func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 	r.ParseForm()
 
 	wiiID := r.Form.Get("mlid")
-	if wiiID == "" {
-		w.Write([]byte(GenNormalErrorCode(310, "At least humor us and use the correct syntax.")))
-		return
-	} else if wiiID[0:1] != "w" {
-		w.Write([]byte(GenNormalErrorCode(310, "Invalid Wii Friend Code.")))
-		return
-	} else if len(wiiID) != 17 {
-		w.Write([]byte(GenNormalErrorCode(310, "Invalid Wii Friend Code.")))
-		return
+	if mode != 1 {
+		if wiiID == "" {
+			w.Write([]byte(GenNormalErrorCode(310, "At least humor us and use the correct syntax.")))
+			return
+		} else if wiiID[0:1] != "w" {
+			w.Write([]byte(GenNormalErrorCode(310, "Invalid Wii Friend Code.")))
+			return
+		} else if len(wiiID) != 17 {
+			w.Write([]byte(GenNormalErrorCode(310, "Invalid Wii Friend Code.")))
+			return
+		}
 	}
 
 	// mode 0: account.cgi call (do not insert into database, only generate mlchkid and passwd)
