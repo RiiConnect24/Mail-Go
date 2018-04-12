@@ -12,8 +12,11 @@ import (
 func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
 	wiiID := ""
 
-	if mode != 1 {
+	if mode == 0 {
 		w.Header().Add("Content-Type", "text/plain;charset=utf-8")
+	}
+
+	if mode != 1 {
 		// TODO: figure out actual mlid generation
 
 		r.ParseForm()
