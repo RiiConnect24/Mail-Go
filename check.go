@@ -61,8 +61,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	Account(w, r, db, 1)
-
 	// By default, we'll assume there's no mail.
 	// mailFlag := "0"
 	resultsLoop := 0
