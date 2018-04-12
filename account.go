@@ -10,14 +10,16 @@ import (
 )
 
 func Account(w http.ResponseWriter, r *http.Request, db *sql.DB, mode int) {
+	wiiID := ""
+
 	if mode != 1 {
 		w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 		// TODO: figure out actual mlid generation
 
 		r.ParseForm()
 
-		wiiID := r.Form.Get("mlid")
-		
+		wiiID = r.Form.Get("mlid")
+
 		if wiiID == "" {
 			w.Write([]byte(GenNormalErrorCode(310, "At least humor us and use the correct syntax.")))
 			return
