@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `accounts`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `accounts` (
-  `ip` int(11) NOT NULL COMMENT 'IP address to associate a mlchkid with a password.',
+  `ip` INT UNSIGNED NOT NULL COMMENT 'IP address to associate a mlchkid with a password.',
   `mlid` varchar(17) DEFAULT NULL COMMENT 'Mail ID',
   `passwd` varchar(60) DEFAULT NULL COMMENT 'Password',
   `mlchkid` varchar(60) DEFAULT NULL COMMENT 'Mail Check ID',

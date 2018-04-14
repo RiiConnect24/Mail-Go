@@ -1,18 +1,18 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
 	"time"
-	"golang.org/x/crypto/bcrypt"
 	_ "github.com/go-sql-driver/mysql"
 	"strings"
 	"net"
 	"bytes"
+	"regexp"
+	"errors"
 )
 
 // https://stackoverflow.com/a/31832326/3874884
@@ -24,6 +24,8 @@ const (
 	letterIdxMask = 1<<letterIdxBits - 1 // All 1-bits, as many as letterIdxBits
 	letterIdxMax  = 63 / letterIdxBits   // # of letter indices fitting in 63 bits
 )
+
+var mailRegex = regexp.MustCompile(`w\d{16}`)
 
 // RandStringBytesMaskImprSrc makes a random string with the specified size.
 func RandStringBytesMaskImprSrc(n int) string {
@@ -125,7 +127,7 @@ func isPrivateSubnet(ipAddress net.IP) bool {
 	return false
 }
 
-func getIPAddress(r *http.Request) string {
+func getIPAddress(r *http.Request) (string, error) {
 	for _, h := range []string{"X-Forwarded-For", "X-Real-Ip"} {
 		addresses := strings.Split(r.Header.Get(h), ",")
 		// march from right to left until we get a public address
@@ -138,39 +140,15 @@ func getIPAddress(r *http.Request) string {
 				// bad address, go to next
 				continue
 			}
-			return ip
+			return ip, nil
 		}
 	}
-	return ""
+	return "", errors.New("couldn't grab your ip")
 }
 
-func Auth(w http.ResponseWriter, r *http.Request, mode int) int {
-	// We're using the IP to associate a mlchkid with a password.
-
-	ip := getIPAddress(r)
-
-	var mlchkid []byte
-	var passwd []byte
-
-	err := db.QueryRow("SELECT passwd,mlchkid FROM `accounts` WHERE `ip` = INET_ATON(?)", ip).Scan(&passwd, &mlchkid)
-
-	if err == sql.ErrNoRows || passwd == nil {
-		Account(w, r, db, mode)
-		return 1
-	} else if err != nil {
-		GenNormalErrorCode(410, "Database error.")
-		log.Print(err)
-	}
-
-	if mode == 1 {
-		if bcrypt.CompareHashAndPassword([]byte(mlchkid), []byte(r.Form.Get("mlchkid"))) != nil {
-			return 2
-		}
-	} else if mode == 2 {
-		if bcrypt.CompareHashAndPassword([]byte(passwd), []byte(r.Form.Get("passwd"))) != nil {
-			return 3
-		}
-	}
-
-	return 0
+// friendCodeIsValid determines if a friend code is valid by
+// checking not empty, is 17 in length, starts with w.
+// BUG(spotlightishere): does not actually determine at a numerical level if valid.
+func friendCodeIsValid(wiiID string) bool {
+	return mailRegex.MatchString(wiiID)
 }

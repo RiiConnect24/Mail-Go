@@ -18,6 +18,9 @@ services:
       MYSQL_RANDOM_ROOT_PASSWORD: "true"
       MYSQL_USER: rc24
       MYSQL_PASSWORD: changeme
+    ports:
+      # Container 80 -> Host 8080
+      - "3306:3306"
     volumes:
       - mail_data:/var/lib/mysql
       - ./schema/:/docker-entrypoint-initdb.d/:ro

@@ -29,7 +29,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	// TODO: insert hmac thing
 	// "ce4cf29a3d6be1c2619172b5cb298c8972d450ad" is the actual
 	// hmac key, according to Larsenv.
-
 	hmacKey := "ce4cf29a3d6be1c2619172b5cb298c8972d450ad"
 
 	// Parse form in preparation for finding mail.
