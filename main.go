@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"github.com/logrusorgru/aurora"
 )
 
 // Config structure for `config.json`.
@@ -30,10 +31,18 @@ var db *sql.DB
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Parse form for further usage.
+		r.ParseForm()
+
 		if global.Debug {
-			// Dump path, etc
-			log.Printf("%s %s", r.Method, r.URL)
+			log.Printf("%s %s", aurora.Blue(r.Method), aurora.Red(r.URL))
+			for name, value := range r.Form {
+				log.Print(name, " ", aurora.Green("=>"), " ", value)
+			}
+			log.Printf("Accessing from: %s", aurora.Blue(r.Host))
 		}
+
+		// Finally, serve.
 		handler.ServeHTTP(w, r)
 	})
 }

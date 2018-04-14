@@ -15,25 +15,17 @@ func Account(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 
-	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`ip`, `mlid`,`mlchkid`, `passwd` ) VALUES (INET_ATON('?'), '?', '?', '?')")
+	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES ('?', '?', '?')")
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
 		log.Fatal(err)
 		return
 	}
 
-	// We're using the IP to associate a mlchkid with a password.
-	ip, err := getIPAddress(r)
-	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(410, "IP error."))
-		log.Printf("error grabbing IP: %v", err)
-		return
-	}
-
 	mlchkid := RandStringBytesMaskImprSrc(32)
 	passwd := RandStringBytesMaskImprSrc(16)
 
-	_, err = stmt.Exec(ip, wiiID, mlchkid, passwd)
+	_, err = stmt.Exec(wiiID, mlchkid, passwd)
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
 		log.Println(err)

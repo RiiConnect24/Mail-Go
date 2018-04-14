@@ -15,9 +15,8 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write([]byte(GenNormalErrorCode(440, "Database error.")))
 		log.Fatal(err)
 	}
-	r.ParseForm()
 
-	isVerified, err := Auth(r, TypePasswd)
+	isVerified, err := Auth(r.Form)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
 		log.Printf("Error deleting: %v", err)
@@ -26,6 +25,7 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
+	log.Println(isVerified, err)
 
 	wiiID := r.Form.Get("mlid")
 	delnum := r.Form.Get("delnum")
@@ -36,6 +36,6 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		w.Write([]byte(fmt.Sprint(GenNormalErrorCode(541, "Issue deleting mail from the database."))))
 	} else {
 		w.Write([]byte(fmt.Sprint(GenNormalErrorCode(100, "Success."),
-			"delnum=", delnum)))
+			"deletenum=", delnum)))
 	}
 }

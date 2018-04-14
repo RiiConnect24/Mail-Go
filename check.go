@@ -39,15 +39,15 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	isVerified, err := Auth(r, TypeMlchkid)
-	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
-		log.Printf("Error checking: %v", err)
-		return
-	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(220, "An authentication error occurred."))
-		return
-	}
+	//isVerified, err := Auth(r.Form)
+	//if err != nil {
+	//	fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+	//	log.Printf("Error checking: %v", err)
+	//	return
+	//} else if !isVerified {
+	//	fmt.Fprintf(w, GenNormalErrorCode(220, "An authentication error occurred."))
+	//	return
+	//}
 
 	mlchkid := r.Form.Get("mlchkid")
 	if mlchkid == "" {
@@ -114,7 +114,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	} */
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
-	fmt.Fprintf(w, GenNormalErrorCode(100, "Success."),
+	fmt.Fprint(w, GenNormalErrorCode(100, "Success."),
 		"res=", hmacKey, "\n",
 		"mail.flag=", RandStringBytesMaskImprSrc(33), "\n",
 		"interval=", interval)
