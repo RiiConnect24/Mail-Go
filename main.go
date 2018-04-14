@@ -54,10 +54,6 @@ func sendHandler(w http.ResponseWriter, r *http.Request) {
 	Send(w, r, db, global)
 }
 
-func accountHandler(w http.ResponseWriter, r *http.Request) {
-	Account(w, r, db, 0)
-}
-
 func main() {
 	file, err := os.Open("config/config.json")
 	if err != nil {
@@ -82,7 +78,7 @@ func main() {
 	db = testDb
 
 	log.Println("Running...")
-	http.HandleFunc("/cgi-bin/account.cgi", accountHandler)
+	http.HandleFunc("/cgi-bin/account.cgi", Account)
 	http.HandleFunc("/cgi-bin/check.cgi", checkHandler)
 	http.HandleFunc("/cgi-bin/receive.cgi", receiveHandler)
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)

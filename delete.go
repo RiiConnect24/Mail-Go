@@ -17,10 +17,13 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	r.ParseForm()
 
-	auth := Auth(w, r, 2)
-
-	if auth == 3 {
-		w.Write([]byte(GenNormalErrorCode(240, "An authentication error occurred.")))
+	isVerified, err := Auth(r, TypePasswd)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+		log.Printf("Error deleting: %v", err)
+		return
+	} else if !isVerified {
+		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
 

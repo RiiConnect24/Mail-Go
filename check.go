@@ -14,7 +14,7 @@ import (
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	stmt, err := db.Prepare("SELECT mlid FROM accounts WHERE mlchkid=?")
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(420, "Unable to formulate authentication statement.")))
+		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 		log.Fatal(err)
 		return
 	}
@@ -34,28 +34,31 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	// Parse form in preparation for finding mail.
 	err = r.ParseForm()
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(320, "Unable to parse parameters.")))
+		fmt.Fprint(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		log.Fatal(err)
 		return
 	}
 
-	auth := Auth(w, r, 1)
-
-	if auth == 2 {
-		w.Write([]byte(GenNormalErrorCode(220, "An authentication error occurred.")))
+	isVerified, err := Auth(r, TypeMlchkid)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+		log.Printf("Error checking: %v", err)
+		return
+	} else if !isVerified {
+		fmt.Fprintf(w, GenNormalErrorCode(220, "An authentication error occurred."))
 		return
 	}
 
 	mlchkid := r.Form.Get("mlchkid")
 	if mlchkid == "" {
-		w.Write([]byte(GenNormalErrorCode(320, "Unable to parse parameters.")))
+		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		return
 	}
 
 	// Check mlchkid
 	result, err := stmt.Query(mlchkid)
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(320, "Unable to parse parameters.")))
+		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		log.Fatal(err)
 		return
 	}
@@ -87,7 +90,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		}
 		err = result.Err()
 		if err != nil {
-			w.Write([]byte(GenNormalErrorCode(420, "Unable to formulate authentication statement.")))
+			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 			log.Fatal(err)
 			return
 		}
@@ -99,22 +102,20 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 
 	err = result.Err()
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(420, "Unable to formulate authentication statement.")))
+		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 		log.Fatal(err)
 		return
 	}
 
 	/* if resultsLoop == 0 {
 		// Looks like that user didn't exist.
-		w.Write([]byte(GenNormalErrorCode(220, "Invalid authentication.")))
+		fmt.Fprintf(w, GenNormalErrorCode(220, "Invalid authentication.")))
 		return
 	} */
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
-	response := GenNormalErrorCode(100, "Success.")
-	response += fmt.Sprint("res=", hmacKey, "\n")
-	// Random, non-zero string until we start checking
-	response += fmt.Sprint("mail.flag=", RandStringBytesMaskImprSrc(33), "\n")
-	response += fmt.Sprint("interval=", interval)
-	w.Write([]byte(response))
+	fmt.Fprintf(w, GenNormalErrorCode(100, "Success."),
+		"res=", hmacKey, "\n",
+		"mail.flag=", RandStringBytesMaskImprSrc(33), "\n",
+		"interval=", interval)
 }

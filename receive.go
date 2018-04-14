@@ -20,10 +20,13 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		log.Fatal(err)
 	}
 
-	auth := Auth(w, r, 2)
-
-	if auth == 3 {
-		w.Write([]byte(GenNormalErrorCode(230, "An authentication error occurred.")))
+	isVerified, err := Auth(r, TypeMlchkid)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+		log.Printf("Error recieving: %v", err)
+		return
+	} else if !isVerified {
+		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
 		return
 	}
 

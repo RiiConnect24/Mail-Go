@@ -72,7 +72,6 @@ func Auth(r *http.Request, authType int) (bool, error) {
 	} else {
 		// We assume that there's only one result.
 		// If there's more, whoops.
-
 		var mlchkid []byte
 		var passwd []byte
 		results.Scan(&passwd, &mlchkid)
