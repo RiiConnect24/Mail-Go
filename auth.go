@@ -3,18 +3,15 @@ package main
 import (
 	"golang.org/x/crypto/bcrypt"
 	"errors"
-	"log"
 	"net/url"
 	"database/sql"
+	"log"
 )
 
 // Auth is a function designed to parse potential information from
 // a WC24 request, such as mlchkid and passwd.
 // It takes a given type and attempts to correspond that to one recorded in a database.
 func Auth(form url.Values) (bool, error) {
-	// Figure out what part of authorization we're supposed to figure out.
-	log.Println("Using type passwd")
-
 	mlid := form.Get("mlid")
 	if !friendCodeIsValid(mlid) {
 		return false, errors.New("invalid mail ID")
@@ -26,6 +23,14 @@ func Auth(form url.Values) (bool, error) {
 		return false, errors.New("invalid authentication type")
 	}
 
+	if global.Debug {
+		bytes, err := bcrypt.GenerateFromPassword([]byte(formGivenType), bcrypt.DefaultCost)
+		if err != nil {
+			return false, err
+		}
+		log.Println("Generated:", string(bytes))
+	}
+
 	// If we're using passwd, we want to select passwd and mlid for security.
 	// Since we only have mlkchkid for check, it's the best we can do.
 	stmt, err := db.Prepare("SELECT `passwd` FROM `accounts` WHERE `mlid` = ?")
@@ -33,7 +38,7 @@ func Auth(form url.Values) (bool, error) {
 		return false, err
 	}
 
-	var passwdResult []byte
+	var passwdResult string
 	err = stmt.QueryRow(mlid).Scan(&passwdResult)
 
 	if err == sql.ErrNoRows {
@@ -43,7 +48,11 @@ func Auth(form url.Values) (bool, error) {
 		return false, err
 	} else {
 		// Found.
+		if global.Debug {
+			log.Println("Stored:", passwdResult)
+		}
+
 		// We now need to double check what was given.
-		return bcrypt.CompareHashAndPassword(passwdResult, []byte(formGivenType)) != nil, nil
+		return bcrypt.CompareHashAndPassword([]byte(passwdResult), []byte(formGivenType)) == nil, nil
 	}
 }
