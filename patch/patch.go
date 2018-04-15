@@ -35,6 +35,7 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB) ([]byte, error) {
 		// Chances are this has a 0 at the start.
 		mlid = "0" + mlid
 	}
+	mlid = "w" + mlid
 
 	// Go ahead and push read data.
 	mlchkid := RandStringBytesMaskImprSrc(32)
