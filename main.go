@@ -15,21 +15,7 @@ import (
 	"github.com/RiiConnect24/Mail-Go/patch"
 )
 
-// Config structure for `config.json`.
-type Config struct {
-	Port           int
-	Host           string
-	Username       string
-	Password       string
-	DBName         string
-	Interval       int
-	BindTo         string
-	SendGridKey    string
-	SendGridDomain string
-	Debug          bool
-}
-
-var global Config
+var global patch.Config
 var db *sql.DB
 var templates *template.Template
 
@@ -82,7 +68,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Printf("unable to read file entirely: %v", err)
 		}
-		patched, err := patch.ModifyNwcConfig(file, db)
+		patched, err := patch.ModifyNwcConfig(file, db, global)
 		if err != nil {
 			log.Printf("unable to patch: %v", err)
 			w.Write([]byte("It seems your patching went awry. Email devs@disconnect24.xyz to see if you can repatch."))
@@ -97,7 +83,6 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		break
 	}
 }
-
 
 func main() {
 	file, err := os.Open("config/config.json")
@@ -141,7 +126,6 @@ func main() {
 	http.HandleFunc("/cgi-bin/receive.cgi", receiveHandler)
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
 	http.HandleFunc("/cgi-bin/send.cgi", sendHandler)
-
 
 	// Site
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

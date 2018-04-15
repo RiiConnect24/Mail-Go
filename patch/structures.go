@@ -20,3 +20,18 @@ type ConfigFormat struct {
 	TitleBooting      int32
 	Checksum          [4]byte
 }
+
+// Config structure for `config.json`.
+type Config struct {
+	Port            int
+	Host            string
+	Username        string
+	Password        string
+	DBName          string
+	Interval        int
+	BindTo          string
+	SendGridKey     string
+	SendGridDomain  string
+	Debug           bool
+	PatchBaseDomain string
+}

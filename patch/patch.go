@@ -13,7 +13,7 @@ import (
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
-func ModifyNwcConfig(originalConfig []byte, db *sql.DB) ([]byte, error) {
+func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, error) {
 	if len(originalConfig) != 1024 {
 		return nil, errors.New("invalid config size")
 	}
@@ -67,14 +67,18 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB) ([]byte, error) {
 	}
 
 	// Alright, now it's time to patch.
-	copy(config.MailDomain[:], []byte("@rc24.xyz"))
+	copy(config.MailDomain[:], []byte(global.SendGridDomain))
+
+	// Copy changed credentials
+	copy(config.Mlchkid[:], []byte(mlchkid))
+	copy(config.Passwd[:], []byte(passwd))
 
 	// The following is very redundantly written. TODO: fix that?
-	copy(config.AccountURL[:128], []byte("http://mtw.rc24.xyz/cgi-bin/account.cgi"))
-	copy(config.CheckURL[:128], []byte("http://mtw.rc24.xyz/cgi-bin/check.cgi"))
-	copy(config.ReceiveURL[:128], []byte("http://mtw.rc24.xyz/cgi-bin/receive.cgi"))
-	copy(config.DeleteURL[:128], []byte("http://mtw.rc24.xyz/cgi-bin/delete.cgi"))
-	copy(config.SendURL[:128], []byte("http://mtw.rc24.xyz/cgi-bin/send.cgi"))
+	copy(config.AccountURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/account.cgi"))
+	copy(config.CheckURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/check.cgi"))
+	copy(config.ReceiveURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/receive.cgi"))
+	copy(config.DeleteURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/delete.cgi"))
+	copy(config.SendURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/send.cgi"))
 
 	// Read from struct to buffer
 	fileBuf := new(bytes.Buffer)

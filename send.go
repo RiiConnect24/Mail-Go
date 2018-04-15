@@ -10,6 +10,7 @@ import (
 	"net/smtp"
 	"regexp"
 	"strings"
+	"github.com/RiiConnect24/Mail-Go/patch"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
@@ -17,7 +18,7 @@ var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
-func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
+func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Config) {
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 	// Go ahead and prepare the insert statement, for later™ usage.
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
@@ -141,7 +142,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	w.Write([]byte(eventualOutput))
 }
 
-func handlePCmail(config Config, senderID string, pcRecipient string, mailContents string) error {
+func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {
 	// Connect to the remote SMTP server.
 	host := "smtp.sendgrid.net"
 	auth := smtp.PlainAuth(
