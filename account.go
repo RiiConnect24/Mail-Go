@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	_ "github.com/go-sql-driver/mysql"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func Account(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +16,7 @@ func Account(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 
-	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES ('?', '?', '?')")
+	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
 		log.Fatal(err)
@@ -25,7 +26,19 @@ func Account(w http.ResponseWriter, r *http.Request) {
 	mlchkid := RandStringBytesMaskImprSrc(32)
 	passwd := RandStringBytesMaskImprSrc(16)
 
-	_, err = stmt.Exec(wiiID, mlchkid, passwd)
+	mlchkidByte, err := bcrypt.GenerateFromPassword([]byte(mlchkid), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("Bcrypt error: %v", err)
+		return
+	}
+
+	passwdByte, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
+	if err != nil {
+		log.Printf("Bcrypt error: %v", err)
+		return
+	}
+
+	_, err = stmt.Exec(wiiID, mlchkidByte, passwdByte)
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
 		log.Println(err)
