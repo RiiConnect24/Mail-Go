@@ -14,6 +14,10 @@ import (
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
 func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, error) {
+	if len(originalConfig) == 0 {
+		return nil, errors.New("config seems to be empty. double check you uploaded a file")
+	}
+
 	if len(originalConfig) != 1024 {
 		return nil, errors.New("invalid config size")
 	}
@@ -53,7 +57,6 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, 
 		return nil, err
 	}
 
-
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
 		log.Printf("Database error: %v", err)
@@ -67,18 +70,39 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, 
 	}
 
 	// Alright, now it's time to patch.
-	copy(config.MailDomain[:], []byte(global.SendGridDomain))
+	var newMailDomain [64]byte
+	copy(newMailDomain[:], []byte(global.SendGridDomain))
+	config.MailDomain = newMailDomain
 
 	// Copy changed credentials
-	copy(config.Mlchkid[:], []byte(mlchkid))
-	copy(config.Passwd[:], []byte(passwd))
+	var newMlchkid [36]byte
+	copy(newMlchkid[:], []byte(mlchkid))
+	config.Mlchkid = newMlchkid
 
-	// The following is very redundantly written. TODO: fix that?
-	copy(config.AccountURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/account.cgi"))
-	copy(config.CheckURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/check.cgi"))
-	copy(config.ReceiveURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/receive.cgi"))
-	copy(config.DeleteURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/delete.cgi"))
-	copy(config.SendURL[:128], []byte(global.PatchBaseDomain + "/cgi-bin/send.cgi"))
+	var newPasswd [32]byte
+	copy(newPasswd[:], []byte(passwd))
+	config.Passwd = newPasswd
+
+	// The following is extremely redundantly written. TODO: fix that?
+	var newAccountURL [128]byte
+	copy(newAccountURL[:], []byte(global.PatchBaseDomain+"/cgi-bin/account.cgi"))
+	config.AccountURL = newAccountURL
+
+	var newCheckURL [128]byte
+	copy(newCheckURL[:], []byte(global.PatchBaseDomain+"/cgi-bin/check.cgi"))
+	config.CheckURL = newCheckURL
+
+	var newRecieveURL [128]byte
+	copy(newRecieveURL[:], []byte(global.PatchBaseDomain+"/cgi-bin/receive.cgi"))
+	config.ReceiveURL = newRecieveURL
+
+	var newDeleteURL [128]byte
+	copy(newDeleteURL[:], []byte(global.PatchBaseDomain+"/cgi-bin/delete.cgi"))
+	config.DeleteURL = newDeleteURL
+
+	var newSendURL [128]byte
+	copy(newSendURL[:], []byte(global.PatchBaseDomain+"/cgi-bin/send.cgi"))
+	config.SendURL = newSendURL
 
 	// Read from struct to buffer
 	fileBuf := new(bytes.Buffer)
