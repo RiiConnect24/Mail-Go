@@ -61,11 +61,15 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		fileWriter, _, err := r.FormFile("uploaded_config")
 		if err != nil || err == http.ErrMissingFile {
 			log.Printf("incorrect file: %v", err)
+			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email.\nError: %v", err)
+			return
 		}
 
 		file, err := ioutil.ReadAll(fileWriter)
 		if err != nil {
 			log.Printf("unable to read file entirely: %v", err)
+			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email.\nError: %v", err)
+			return
 		}
 
 		patched, err := patch.ModifyNwcConfig(file, db, global)
