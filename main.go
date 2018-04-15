@@ -61,21 +61,21 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		fileWriter, _, err := r.FormFile("uploaded_config")
 		if err != nil || err == http.ErrMissingFile {
 			log.Printf("incorrect file: %v", err)
-			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email.\nError: %v", err)
+			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
 			return
 		}
 
 		file, err := ioutil.ReadAll(fileWriter)
 		if err != nil {
 			log.Printf("unable to read file entirely: %v", err)
-			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email.\nError: %v", err)
+			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email support@riiconnect24.net.\nError: %v", err)
 			return
 		}
 
 		patched, err := patch.ModifyNwcConfig(file, db, global)
 		if err != nil {
 			log.Printf("unable to patch: %v", err)
-			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email.\nError: %v", err)
+			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
 		}
 		w.Header().Add("Content-Type", "application/octet-stream")
 		w.Header().Add("Content-Disposition", "attachment; filename=\"nwc24msg.cfg\"")
