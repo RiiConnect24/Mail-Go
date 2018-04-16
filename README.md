@@ -10,3 +10,6 @@ Some reasons why:
 The source is entirely here, with each individual cgi component in their own file.
 A `Dockerfile` is available to create an image. You can use `docker-compose.yml` to develop on this specific component with its own mysql, or use *something that doesn't yet exist* to develop on RC24 as a whole.
 You can use `docker-compose up` to start up both MySQL and Mail-Go.
+
+# How can I use the patcher for my own usage?
+You're welcome to `POST /patch` with a `nwc24msg.cfg` under form key `uploaded_config`.
