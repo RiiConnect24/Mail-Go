@@ -65,7 +65,7 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, salt []by
 
 	// Alright, now it's time to patch.
 	var newMailDomain [64]byte
-	copy(newMailDomain[:], []byte(global.SendGridDomain))
+	copy(newMailDomain[:], []byte("@" + global.SendGridDomain))
 	config.MailDomain = newMailDomain
 
 	// Copy changed credentials
