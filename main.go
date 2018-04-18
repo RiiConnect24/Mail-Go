@@ -1,18 +1,18 @@
 package main
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/RiiConnect24/Mail-Go/patch"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/logrusorgru/aurora"
+	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
-	"github.com/logrusorgru/aurora"
-	"io/ioutil"
-	"html/template"
-	"github.com/RiiConnect24/Mail-Go/patch"
-	"crypto/rand"
 )
 
 var global patch.Config
@@ -109,7 +109,6 @@ func main() {
 	} else if err != nil {
 		panic(err)
 	}
-
 
 	file, err := os.Open("config/config.json")
 	if err != nil {

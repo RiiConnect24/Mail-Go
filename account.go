@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"net/http"
-	_ "github.com/go-sql-driver/mysql"
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"log"
+	"net/http"
 )
 
 func Account(w http.ResponseWriter, r *http.Request) {

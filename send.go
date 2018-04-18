@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
+	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/google/uuid"
 	"log"
 	"net/http"
 	"net/smtp"
 	"regexp"
 	"strings"
-	"github.com/RiiConnect24/Mail-Go/patch"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)

@@ -1,13 +1,13 @@
 package main
 
 import (
+	"crypto/sha512"
 	"database/sql"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
-	"crypto/sha512"
-	"encoding/hex"
 )
 
 // Check handles adding the proper interval for check.cgi along with future

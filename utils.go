@@ -2,13 +2,13 @@ package main
 
 import (
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/logrusorgru/aurora"
 	"log"
 	"math/rand"
+	"regexp"
 	"strconv"
 	"time"
-	_ "github.com/go-sql-driver/mysql"
-	"regexp"
-	"github.com/logrusorgru/aurora"
 )
 
 // https://stackoverflow.com/a/31832326/3874884

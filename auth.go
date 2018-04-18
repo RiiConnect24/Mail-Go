@@ -1,11 +1,11 @@
 package main
 
 import (
+	"crypto/sha512"
+	"database/sql"
+	"encoding/hex"
 	"errors"
 	"net/url"
-	"database/sql"
-	"crypto/sha512"
-	"encoding/hex"
 )
 
 // Auth is a function designed to parse potential information from
