@@ -12,7 +12,7 @@ import (
 // challenge solving and future mail existence checking.
 // BUG(spotlightishere): Challenge solving isn't implemented whatsoever.
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
-	stmt, err := db.Prepare("SELECT mlid FROM accounts WHERE mlchkid=?")
+	stmt, err := db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 		log.Fatal(err)
@@ -39,16 +39,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	//isVerified, err := Auth(r.Form)
-	//if err != nil {
-	//	fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
-	//	log.Printf("Error checking: %v", err)
-	//	return
-	//} else if !isVerified {
-	//	fmt.Fprintf(w, GenNormalErrorCode(220, "An authentication error occurred."))
-	//	return
-	//}
-
 	mlchkid := r.Form.Get("mlchkid")
 	if mlchkid == "" {
 		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
@@ -64,7 +54,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	}
 
 	// By default, we'll assume there's no mail.
-	// mailFlag := "0"
+	mailFlag := "0"
 	resultsLoop := 0
 
 	// Scan through returned rows.
@@ -96,7 +86,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		}
 
 		// Set mail flag to number of mail taken from database
-		// mailFlag = strconv.Itoa(size)
+		mailFlag = strconv.Itoa(size)
 		resultsLoop++
 	}
 
@@ -107,15 +97,15 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	/* if resultsLoop == 0 {
+	if resultsLoop == 0 {
 		// Looks like that user didn't exist.
-		fmt.Fprintf(w, GenNormalErrorCode(220, "Invalid authentication.")))
+		fmt.Fprintf(w, GenNormalErrorCode(220, "Invalid authentication."))
 		return
-	} */
+	}
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
 	fmt.Fprint(w, GenNormalErrorCode(100, "Success."),
 		"res=", hmacKey, "\n",
-		"mail.flag=", RandStringBytesMaskImprSrc(33), "\n",
+		"mail.flag=", mailFlag, "\n",
 		"interval=", interval)
 }
