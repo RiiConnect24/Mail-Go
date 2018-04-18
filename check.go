@@ -6,6 +6,8 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"crypto/sha512"
+	"encoding/hex"
 )
 
 // Check handles adding the proper interval for check.cgi along with future
@@ -45,8 +47,12 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
+	// Grab salt + mlchkid sha512
+	hashByte := sha512.Sum512(append(salt, []byte(mlchkid)...))
+	hash := hex.EncodeToString(hashByte[:])
+
 	// Check mlchkid
-	result, err := stmt.Query(mlchkid)
+	result, err := stmt.Query(hash)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		log.Fatal(err)

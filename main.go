@@ -12,11 +12,13 @@ import (
 	"io/ioutil"
 	"html/template"
 	"github.com/RiiConnect24/Mail-Go/patch"
+	"crypto/rand"
 )
 
 var global patch.Config
 var db *sql.DB
 var templates *template.Template
+var salt []byte
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +73,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		patched, err := patch.ModifyNwcConfig(file, db, global)
+		patched, err := patch.ModifyNwcConfig(file, db, global, salt)
 		if err != nil {
 			log.Printf("unable to patch: %v", err)
 			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
@@ -88,6 +90,27 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// Get salt for passwords
+	saltLocation := "config/salt.bin"
+	salt, err := ioutil.ReadFile(saltLocation)
+	if os.IsNotExist(err) {
+		log.Printf("No salt found. Creating....")
+		salt = make([]byte, 128)
+
+		_, err := rand.Read(salt)
+		if err != nil {
+			panic(err)
+		}
+
+		err = ioutil.WriteFile("config/salt.bin", salt, os.ModePerm)
+		if err != nil {
+			panic(err)
+		}
+	} else if err != nil {
+		panic(err)
+	}
+
+
 	file, err := os.Open("config/config.json")
 	if err != nil {
 		panic(err)
@@ -150,7 +173,7 @@ func main() {
 		s3.Execute(w, nil)
 	})
 	http.HandleFunc("/patch", configHandle)
-	
+
 	log.Println("Running...")
 
 	// We do this to log all access to the page.

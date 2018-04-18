@@ -1,11 +1,11 @@
 package main
 
 import (
-	"golang.org/x/crypto/bcrypt"
 	"errors"
 	"net/url"
 	"database/sql"
-	"log"
+	"crypto/sha512"
+	"encoding/hex"
 )
 
 // Auth is a function designed to parse potential information from
@@ -18,41 +18,31 @@ func Auth(form url.Values) (bool, error) {
 	}
 
 	// Now we need to double check the given auth type is even used.
-	formGivenType := form.Get("passwd")
-	if formGivenType == "" {
+	passwd := form.Get("passwd")
+	if passwd == "" {
 		return false, errors.New("invalid authentication type")
 	}
 
-	if global.Debug {
-		bytes, err := bcrypt.GenerateFromPassword([]byte(formGivenType), bcrypt.DefaultCost)
-		if err != nil {
-			return false, err
-		}
-		log.Println("Generated:", string(bytes))
-	}
-
 	// If we're using passwd, we want to select passwd and mlid for security.
-	// Since we only have mlkchkid for check, it's the best we can do.
-	stmt, err := db.Prepare("SELECT `passwd` FROM `accounts` WHERE `mlid` = ?")
+	// Grab salt + passwd sha512
+	hashByte := sha512.Sum512(append(salt, []byte(passwd)...))
+	hash := hex.EncodeToString(hashByte[:])
+
+	stmt, err := db.Prepare("SELECT `passwd` FROM `accounts` WHERE `mlid` = ? AND `passwd` = ?")
 	if err != nil {
 		return false, err
 	}
 
 	var passwdResult string
-	err = stmt.QueryRow(mlid).Scan(&passwdResult)
+	err = stmt.QueryRow(mlid, hash).Scan(&passwdResult)
 
 	if err == sql.ErrNoRows {
 		// Not found.
 		return false, nil
 	} else if err != nil {
+		// Some type of SQL error... pass it on.
 		return false, err
 	} else {
-		// Found.
-		if global.Debug {
-			log.Println("Stored:", passwdResult)
-		}
-
-		// We now need to double check what was given.
-		return bcrypt.CompareHashAndPassword([]byte(passwdResult), []byte(formGivenType)) == nil, nil
+		return true, nil
 	}
 }

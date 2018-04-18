@@ -26,8 +26,8 @@ DROP TABLE IF EXISTS `accounts`;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `accounts` (
   `mlid` varchar(17) DEFAULT NULL COMMENT 'Mail ID',
-  `passwd` varchar(60) DEFAULT NULL COMMENT 'Password',
-  `mlchkid` varchar(60) DEFAULT NULL COMMENT 'Mail Check ID',
+  `passwd` varchar(128) DEFAULT NULL COMMENT 'Password',
+  `mlchkid` varchar(128) DEFAULT NULL COMMENT 'Mail Check ID',
   UNIQUE KEY `mlid` (`mlid`),
   UNIQUE KEY `mlchkid` (`mlchkid`),
   UNIQUE KEY `passwd` (`passwd`)

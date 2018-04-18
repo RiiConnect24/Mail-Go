@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"database/sql"
 	"log"
-	"golang.org/x/crypto/bcrypt"
+	"crypto/sha512"
+	"encoding/hex"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
-func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, error) {
+func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, salt []byte) ([]byte, error) {
 	if len(originalConfig) == 0 {
 		return nil, errors.New("config seems to be empty. double check you uploaded a file")
 	}
@@ -41,21 +42,14 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, 
 	}
 	mlid = "w" + mlid
 
-	// Go ahead and push read data.
+	// Go ahead and push generated data.
 	mlchkid := RandStringBytesMaskImprSrc(32)
+	mlchkidByte := sha512.Sum512(append(salt, []byte(mlchkid)...))
+	mlchkidHash := hex.EncodeToString(mlchkidByte[:])
+
 	passwd := RandStringBytesMaskImprSrc(16)
-
-	mlchkidByte, err := bcrypt.GenerateFromPassword([]byte(mlchkid), bcrypt.DefaultCost)
-	if err != nil {
-		log.Printf("Bcrypt error: %v", err)
-		return nil, err
-	}
-
-	passwdByte, err := bcrypt.GenerateFromPassword([]byte(passwd), bcrypt.DefaultCost)
-	if err != nil {
-		log.Printf("Bcrypt error: %v", err)
-		return nil, err
-	}
+	passwdByte := sha512.Sum512(append(salt, []byte(passwd)...))
+	passwdHash := hex.EncodeToString(passwdByte[:])
 
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
@@ -63,7 +57,7 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config) ([]byte, 
 		return nil, err
 	}
 
-	_, err = stmt.Exec(mlid, mlchkidByte, passwdByte)
+	_, err = stmt.Exec(mlid, mlchkidHash, passwdHash)
 	if err != nil {
 		log.Printf("Database error: %v", err)
 		return nil, err
