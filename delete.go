@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 // Delete handles delete requests of mail.
@@ -12,8 +13,9 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	stmt, err := db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ? ORDER BY `timestamp` ASC LIMIT ?")
 	if err != nil {
 		// Welp, that went downhill fast.
-		w.Write([]byte(GenNormalErrorCode(440, "Database error.")))
+		fmt.Fprint(w, GenNormalErrorCode(440, "Database error."))
 		log.Fatal(err)
+		return
 	}
 
 	isVerified, err := Auth(r.Form)
@@ -25,17 +27,23 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
-	log.Println(isVerified, err)
 
+	// We don't need to check mlid as it's been verified by Auth above.
 	wiiID := r.Form.Get("mlid")
+
 	delnum := r.Form.Get("delnum")
-	_, err = stmt.Exec(wiiID, delnum)
+	actualDelnum, err := strconv.Atoi(delnum)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(340, "Invalid delete value."))
+		return
+	}
+	_, err = stmt.Exec(wiiID, actualDelnum)
 
 	if err != nil {
 		log.Fatal(err)
-		w.Write([]byte(fmt.Sprint(GenNormalErrorCode(541, "Issue deleting mail from the database."))))
+		fmt.Fprint(w, GenNormalErrorCode(541, "Issue deleting mail from the database."))
 	} else {
-		w.Write([]byte(fmt.Sprint(GenNormalErrorCode(100, "Success."),
-			"deletenum=", delnum)))
+		fmt.Fprint(w, GenNormalErrorCode(100, "Success."),
+			"deletenum=", delnum)
 	}
 }
