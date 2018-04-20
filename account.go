@@ -5,14 +5,25 @@ import (
 	"encoding/hex"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/logrusorgru/aurora"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 func Account(w http.ResponseWriter, r *http.Request) {
+	var is string
+	// Check if we should use `=` for a Wii or
+	// `:` for the Homebrew patcher.
+	if r.URL.Path == "/cgi-bin/account.cgi" {
+		is = "="
+	} else {
+		is = ":"
+	}
+
 	wiiID := r.Form.Get("mlid")
 	if !friendCodeIsValid(wiiID) {
-		fmt.Fprint(w, GenNormalErrorCode(610, "Invalid Wii Friend Code."))
+		fmt.Fprint(w, GenAccountErrorCode(610, is, "Invalid Wii Friend Code."))
 		return
 	}
 
@@ -20,7 +31,7 @@ func Account(w http.ResponseWriter, r *http.Request) {
 
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`passwd`, `mlchkid` ) VALUES (?, ?, ?)")
 	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(410, "Database error."))
+		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
 		log.Fatal(err)
 		return
 	}
@@ -35,32 +46,22 @@ func Account(w http.ResponseWriter, r *http.Request) {
 
 	result, err := stmt.Exec(wiiID, passwdHash, mlchkidHash)
 	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(410, "Database error."))
+		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
 		log.Println(err)
 		return
 	}
 
 	affected, err := result.RowsAffected()
 	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(410, "Database error."))
+		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
 		log.Println(err)
 		return
 	}
 
 	if affected == 0 {
 		fmt.Fprint(w, "\n",
-			GenNormalErrorCode(211, "Duplicate registration."))
+			GenAccountErrorCode(211, is, "Duplicate registration."))
 		return
-	}
-
-	var is string
-
-	// Check if we should use `=` for a Wii or
-	// `:` for the Homebrew patcher.
-	if r.URL.Path == "/cgi-bin/account.cgi" {
-		is = "="
-	} else {
-		is = ":"
 	}
 
 	fmt.Fprint(w, "\n",
@@ -69,4 +70,13 @@ func Account(w http.ResponseWriter, r *http.Request) {
 		"mlid", is, wiiID, "\n",
 		"passwd", is, passwd, "\n",
 		"mlchkid", is, mlchkid, "\n")
+}
+
+func GenAccountErrorCode(error int, is string, reason string) string {
+	if error == 410 {
+		log.Println(aurora.Red("[Warning]"), "Encountered error", error, "with reason", reason)
+	}
+	return fmt.Sprint(
+		"cd", is, strconv.Itoa(error), "\n",
+		"msg", is, reason, "\n")
 }
