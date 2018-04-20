@@ -10,6 +10,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o app 
 FROM jwilder/dockerize
 WORKDIR /
 COPY --from=builder /go/src/github.com/RiiConnect24/Mail-Go/app .
-ADD patch/templates templates
+RUN mkdir -p patch/templates
+ADD patch/templates patch/templates
 # Wait until there's an actual MySQL connection we can use to start.
 CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/app"]

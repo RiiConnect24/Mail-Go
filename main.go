@@ -13,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"github.com/coreos/go-systemd/daemon"
 )
 
 var global patch.Config
@@ -130,7 +131,7 @@ func main() {
 	}
 
 	// Load templates for HTML serving later on
-	templateLocation := "/templates"
+	templateLocation := "./patch/templates"
 	templateDir, err := os.Open(templateLocation)
 	if err != nil {
 		panic(err)
@@ -174,6 +175,10 @@ func main() {
 	})
 	http.HandleFunc("/patch", configHandle)
 
+	// Allow systemd to run as notify
+	// Thanks to https://vincent.bernat.im/en/blog/2017-systemd-golang
+	// for the following things.
+	daemon.SdNotify(false, "READY=1")
 	log.Println("Running...")
 
 	// We do this to log all access to the page.
