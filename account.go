@@ -59,13 +59,11 @@ func Account(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if affected == 0 {
-		fmt.Fprint(w, "\n",
-			GenAccountErrorCode(211, is, "Duplicate registration."))
+		fmt.Fprint(w, GenAccountErrorCode(211, is, "Duplicate registration."))
 		return
 	}
 
-	fmt.Fprint(w, "\n",
-		"cd", is, "100", "\n",
+	fmt.Fprint(w, "cd", is, "100", "\n",
 		"msg", is, "Success", "\n",
 		"mlid", is, wiiID, "\n",
 		"passwd", is, passwd, "\n",

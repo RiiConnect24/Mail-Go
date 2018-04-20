@@ -116,6 +116,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
+		// Replace all @wii.com friend request email with our domain.
+		mailContents = strings.Replace(mailContents, fmt.Sprintf("w%s@wii.com <w%s@wii.com>", senderID, senderID), fmt.Sprintf("w%s@%s <w%s@%s>", senderID, global.SendGridDomain, senderID, global.SendGridDomain), -1)
 
 		// We're done figuring out the mail, now it's time to act as needed.
 		// For Wii recipients, we can just insert into the database.
