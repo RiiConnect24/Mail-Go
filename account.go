@@ -53,9 +53,20 @@ func Account(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	var is string
+
+	// Check if we should use `=` for a Wii or
+	// `:` for the Homebrew patcher.
+	if r.URL.Path == "/cgi-bin/account.cgi" {
+		is = "="
+	} else {
+		is = ":"
+	}
+
 	fmt.Fprint(w, "\n",
-		GenNormalErrorCode(100, "Success."),
-		"mlid=", wiiID, "\n",
-		"passwd=", passwd, "\n",
-		"mlchkid=", mlchkid, "\n")
+		"cd", is, "100", "\n",
+		"msg", is, "Success", "\n",
+		"mlid", is, wiiID, "\n",
+		"passwd", is, passwd, "\n",
+		"mlchkid", is, mlchkid, "\n")
 }

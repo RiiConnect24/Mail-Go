@@ -147,6 +147,7 @@ func main() {
 
 	// Mail calls
 	http.HandleFunc("/cgi-bin/account.cgi", Account)
+	http.HandleFunc("/cgi-bin/patcher.cgi", Account)
 	http.HandleFunc("/cgi-bin/check.cgi", checkHandler)
 	http.HandleFunc("/cgi-bin/receive.cgi", receiveHandler)
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
