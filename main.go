@@ -63,6 +63,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		fileWriter, _, err := r.FormFile("uploaded_config")
 		if err != nil || err == http.ErrMissingFile {
 			log.Printf("incorrect file: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
 			return
 		}
@@ -70,6 +71,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		file, err := ioutil.ReadAll(fileWriter)
 		if err != nil {
 			log.Printf("unable to read file entirely: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email support@riiconnect24.net.\nError: %v", err)
 			return
 		}
@@ -77,6 +79,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		patched, err := patch.ModifyNwcConfig(file, db, global, salt)
 		if err != nil {
 			log.Printf("unable to patch: %v", err)
+			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
 		}
 		w.Header().Add("Content-Type", "application/octet-stream")
