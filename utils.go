@@ -55,7 +55,11 @@ func GenMailErrorCode(mailNumber string, error int, reason string) string {
 
 // GenNormalErrorCode formulates a proper response for overall errors.
 func GenNormalErrorCode(error int, reason string) string {
-	if error != 100 {
+	switch error {
+	case 100:
+	case 220:
+		break
+	default:
 		log.Println(aurora.Red("[Warning]"), "Encountered error", error, "with reason", reason)
 	}
 	return fmt.Sprint(

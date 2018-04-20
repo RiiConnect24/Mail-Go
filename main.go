@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/coreos/go-systemd/daemon"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
 	"html/template"
@@ -13,7 +14,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"github.com/coreos/go-systemd/daemon"
 )
 
 var global patch.Config
