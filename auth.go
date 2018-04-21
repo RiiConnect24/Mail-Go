@@ -9,7 +9,7 @@ import (
 	"regexp"
 )
 
-var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\npasswd=(.{16,32})$`)
+var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\r\npasswd=(.{16,32})$`)
 
 // Auth is a function designed to parse potential information from
 // a WC24 request, such as mlchkid and passwd.
