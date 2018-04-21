@@ -68,7 +68,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	for result.Next() {
 		var mlid string
 		err = result.Scan(&mlid)
-		log.Print(mlid)
 		stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
 		if err != nil {
 			log.Fatal(err)

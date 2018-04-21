@@ -7,7 +7,6 @@ import (
 	"errors"
 	"net/url"
 	"regexp"
-	"log"
 )
 
 var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\npasswd=(.{16,32})$`)
@@ -18,7 +17,6 @@ var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\npasswd=(.{16,32})$`)
 func Auth(form url.Values) (bool, error) {
 	mlid := form.Get("mlid")
 	var passwd string
-	log.Println(mlid)
 
 	// First, check if it's the send format of mlid.
 	sendFormat := sendAuthRegex.FindStringSubmatch(mlid)
