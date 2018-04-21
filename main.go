@@ -98,7 +98,7 @@ func main() {
 	saltLocation := "config/salt.bin"
 	salt, err := ioutil.ReadFile(saltLocation)
 	if os.IsNotExist(err) {
-		log.Printf("No salt found. Creating....")
+		log.Println("No salt found. Creating....")
 		salt = make([]byte, 128)
 
 		_, err := rand.Read(salt)
@@ -114,6 +114,7 @@ func main() {
 		panic(err)
 	}
 
+	// Read config
 	file, err := os.Open("config/config.json")
 	if err != nil {
 		panic(err)
@@ -122,6 +123,10 @@ func main() {
 	err = decoder.Decode(&global)
 	if err != nil {
 		panic(err)
+	}
+
+	if global.Debug {
+		log.Println("Connecting to MySQL...")
 	}
 	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
 		global.Username, global.Password, global.Host, global.Port, global.DBName))

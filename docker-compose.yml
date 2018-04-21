@@ -11,9 +11,11 @@ services:
       - "8080:80"
     # We must wait for the DB to import/etc before starting ourselves.
     depends_on:
-     - "database"
+      - "database"
+    networks:
+      - "internal"
   database:
-    image: mysql
+    image: mysql:5
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: "true"
       MYSQL_USER: rc24
@@ -24,6 +26,10 @@ services:
     volumes:
       - mail_data:/var/lib/mysql
       - ./schema/:/docker-entrypoint-initdb.d/:ro
+    networks:
+      - "internal"
 
 volumes:
   mail_data:
+networks:
+  internal:
