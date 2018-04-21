@@ -20,11 +20,11 @@ var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
 func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Config) {
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
-	// Go ahead and prepare the insert statement, for later™ usage.
+	// Go ahead and prepare the insert statement, for later usage.
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		// Welp, that went downhill fast.
-		w.Write([]byte(GenNormalErrorCode(450, "Database error.")))
+		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
 		return
 	}
 
@@ -34,8 +34,19 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	// Parse form in preparation for finding mail.
 	err = r.ParseMultipartForm(-1)
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(350, "Failed to parse mail.")))
+		fmt.Fprint(w,GenNormalErrorCode(350, "Failed to parse mail."))
 		log.Fatal(err)
+		return
+	}
+
+	// Now check if it can be verified
+	isVerified, err := Auth(r.Form)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+		log.Printf("Error sending: %v", err)
+		return
+	} else if !isVerified {
+		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
 
@@ -141,7 +152,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	}
 
 	// We're completely done now.
-	w.Write([]byte(eventualOutput))
+	fmt.Fprint(w,eventualOutput)
 }
 
 func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {
