@@ -30,24 +30,18 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	// Go expects multiple values for a key.
-	// We take the first, and then we use
-	// splicing to take char 1 -> end
+	// We already know the mlid is valid from previous
+	// so we don't need to further check.
 	mlidWithW := r.Form.Get("mlid")
-	if len(mlidWithW) != 17 {
-		// 17 is size of 4 x 4 digits plus starting W
-		w.Write([]byte(GenNormalErrorCode(330, "If you're gonna try and interface with this script, at least have mlid the proper length.")))
-		return
-	}
 	mlid := mlidWithW[1:]
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
-		w.Write([]byte(GenNormalErrorCode(330, "maxsize needs to be an int.")))
+		fmt.Fprint(w,GenNormalErrorCode(330, "maxsize needs to be an int."))
 		return
 	}
 
-	stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,7 +55,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	mailSize := 0
 
 	// Statement to mark as sent once put in mail output
-	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` =?")
+	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -131,7 +125,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		"allnum=", amountOfMail, "\n",
 		totalMailOutput,
 		"\r\n--", wc24MimeBoundary, "--\r\n")
-	w.Write([]byte(request))
+	fmt.Fprint(w,request)
 }
 
 func random(min, max int) int {
