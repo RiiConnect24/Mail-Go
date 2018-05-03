@@ -98,6 +98,9 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, salt []by
 	copy(newSendURL[:], []byte(global.PatchBaseDomain+"/cgi-bin/send.cgi"))
 	config.SendURL = newSendURL
 
+	// Enable title booting
+	config.TitleBooting = 1
+
 	// Read from struct to buffer
 	fileBuf := new(bytes.Buffer)
 	err = binary.Write(fileBuf, binary.BigEndian, config)

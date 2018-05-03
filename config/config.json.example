@@ -8,5 +8,6 @@
   "BindTo": ":80",
   "SendGridKey": "changeme",
   "SendGridDomain": "changeme.xyz",
-  "Debug": true
+  "Debug": true,
+  "PatchBaseDomain": "http://mail.changeme.xyz"
 }
