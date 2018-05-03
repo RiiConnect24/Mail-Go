@@ -22,7 +22,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	isVerified, err := Auth(r.Form)
 	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+		fmt.Fprintf(w, GenNormalErrorCode(531, "Something weird happened."))
 		log.Printf("Error recieving: %v", err)
 		return
 	} else if !isVerified {
