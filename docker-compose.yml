@@ -12,8 +12,6 @@ services:
     # We must wait for the DB to import/etc before starting ourselves.
     depends_on:
       - "database"
-    networks:
-      - "internal"
   database:
     image: mysql:5
     environment:
@@ -26,10 +24,6 @@ services:
     volumes:
       - mail_data:/var/lib/mysql
       - ./schema/:/docker-entrypoint-initdb.d/:ro
-    networks:
-      - "internal"
 
 volumes:
   mail_data:
-networks:
-  internal:

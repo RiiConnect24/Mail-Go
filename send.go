@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"net/smtp"
+	//"net/smtp"
 	"regexp"
 	"strings"
 )
@@ -34,7 +35,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	// Parse form in preparation for finding mail.
 	err = r.ParseMultipartForm(-1)
 	if err != nil {
-		fmt.Fprint(w,GenNormalErrorCode(350, "Failed to parse mail."))
+		fmt.Fprint(w, GenNormalErrorCode(350, "Failed to parse mail."))
 		log.Fatal(err)
 		return
 	}
@@ -127,8 +128,13 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
-		// Replace all @wii.com friend request email with our domain.
-		mailContents = strings.Replace(mailContents, fmt.Sprintf("w%s@wii.com <w%s@wii.com>", senderID, senderID), fmt.Sprintf("w%s@%s <w%s@%s>", senderID, global.SendGridDomain, senderID, global.SendGridDomain), -1)
+		// Replace all @wii.com references in the
+		// friend request email with our own domain.
+		// Format: w9004342343324713@wii.com <mailto:w9004342343324713@wii.com>
+		mailContents = strings.Replace(mailContents,
+			fmt.Sprintf("%s@wii.com <mailto:%s@wii.com>", senderID, senderID),
+			fmt.Sprintf("%s@%s <mailto:%s@%s>", senderID, global.SendGridDomain, senderID, global.SendGridDomain),
+			-1)
 
 		// We're done figuring out the mail, now it's time to act as needed.
 		// For Wii recipients, we can just insert into the database.
@@ -152,7 +158,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	}
 
 	// We're completely done now.
-	fmt.Fprint(w,eventualOutput)
+	fmt.Fprint(w, eventualOutput)
 }
 
 func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {
