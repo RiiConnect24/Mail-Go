@@ -5,11 +5,11 @@ import (
 	"encoding/binary"
 	"bytes"
 	"io/ioutil"
-	"strconv"
 	"database/sql"
 	"log"
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
@@ -35,12 +35,7 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, salt []by
 	}
 
 	// Figure out mlid
-	mlid := strconv.Itoa(int(config.FriendCode))
-	if len(mlid) == 15 {
-		// Chances are this has a 0 at the start.
-		mlid = "0" + mlid
-	}
-	mlid = "w" + mlid
+	mlid := fmt.Sprintf("w%016d", config.FriendCode)
 
 	// Go ahead and push generated data.
 	mlchkid := RandStringBytesMaskImprSrc(32)
