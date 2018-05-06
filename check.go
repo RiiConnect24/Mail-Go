@@ -109,7 +109,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	}
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
-	fmt.Fprint(w, GenNormalErrorCode(100, "Success."),
+	fmt.Fprint(w, GenSuccessResponse(),
 		"res=", hmacKey, "\n",
 		"mail.flag=", mailFlag, "\n",
 		"interval=", interval)

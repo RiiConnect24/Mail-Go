@@ -63,8 +63,7 @@ func Account(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fmt.Fprint(w, "cd", is, "100", "\n",
-		"msg", is, "Success", "\n",
+	fmt.Fprint(w, GenSuccessResponseTyped(is),
 		"mlid", is, wiiID, "\n",
 		"passwd", is, passwd, "\n",
 		"mlchkid", is, mlchkid, "\n")

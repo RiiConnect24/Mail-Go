@@ -37,7 +37,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
-		fmt.Fprint(w,GenNormalErrorCode(330, "maxsize needs to be an int."))
+		fmt.Fprint(w, GenNormalErrorCode(330, "maxsize needs to be an int."))
 		return
 	}
 
@@ -118,14 +118,13 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	request := fmt.Sprint("--", wc24MimeBoundary, "\r\n",
 		"Content-Type: text/plain\r\n\r\n",
 		"This part is ignored.\r\n\r\n\r\n\n",
-		"cd=100\n",
-		"msg=Success.\n",
+		GenSuccessResponse(),
 		"mailnum=", amountOfMail, "\n",
 		"mailsize=", mailSize, "\n",
 		"allnum=", amountOfMail, "\n",
 		totalMailOutput,
 		"\r\n--", wc24MimeBoundary, "--\r\n")
-	fmt.Fprint(w,request)
+	fmt.Fprint(w, request)
 }
 
 func random(min, max int) int {

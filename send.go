@@ -57,7 +57,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 		}
 	}
 
-	eventualOutput := GenNormalErrorCode(100, "Success.")
+	eventualOutput := GenSuccessResponse()
 	eventualOutput += fmt.Sprint("mlnum=", len(mailPart), "\n")
 
 	// Handle all the mail! \o/

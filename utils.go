@@ -56,7 +56,6 @@ func GenMailErrorCode(mailNumber string, error int, reason string) string {
 // GenNormalErrorCode formulates a proper response for overall errors.
 func GenNormalErrorCode(error int, reason string) string {
 	switch error {
-	case 100:
 	case 220:
 		break
 	default:
@@ -65,6 +64,18 @@ func GenNormalErrorCode(error int, reason string) string {
 	return fmt.Sprint(
 		"cd=", strconv.Itoa(error), "\n",
 		"msg=", reason, "\n")
+}
+
+// GenSuccessResponse returns a successful message, using = as the divider between characters.
+func GenSuccessResponse() string {
+	return GenSuccessResponseTyped("=")
+}
+
+// GenSuccessResponseTyped returns a successful message, using the specified character as a divider.
+func GenSuccessResponseTyped(divider string) string {
+	return fmt.Sprint(
+		"cd", divider, "100\n",
+		"msg", divider, "Success.\n")
 }
 
 // friendCodeIsValid determines if a friend code is valid by

@@ -43,7 +43,7 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		log.Fatal(err)
 		fmt.Fprint(w, GenNormalErrorCode(541, "Issue deleting mail from the database."))
 	} else {
-		fmt.Fprint(w, GenNormalErrorCode(100, "Success."),
+		fmt.Fprint(w, GenSuccessResponse(),
 			"deletenum=", delnum)
 	}
 }
