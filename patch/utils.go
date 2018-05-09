@@ -3,6 +3,9 @@ package patch
 import (
 	"time"
 	"math/rand"
+	"runtime"
+	"log"
+	"github.com/getsentry/raven-go"
 )
 
 // https://stackoverflow.com/a/31832326/3874884
@@ -32,4 +35,20 @@ func RandStringBytesMaskImprSrc(n int) string {
 	}
 
 	return string(b)
+}
+
+func LogError(ravenClient *raven.Client,reason string, err error) {
+	// Adapted from
+	// https://stackoverflow.com/a/38551362
+	pc, _, _, ok := runtime.Caller(1)
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		// Log to console
+		log.Printf("%s: %v", reason, err)
+
+		// and if it's available, Sentry.
+		if ravenClient != nil {
+			raven.CaptureError(err, map[string]string{"given_reason": reason})
+		}
+	}
 }

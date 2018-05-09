@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/google/uuid"
-	"log"
 	"net/http"
 	"net/smtp"
 	//"net/smtp"
@@ -26,6 +25,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	if err != nil {
 		// Welp, that went downhill fast.
 		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
+		LogError("Prepared send statement error", err)
 		return
 	}
 
@@ -36,7 +36,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	err = r.ParseMultipartForm(-1)
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(350, "Failed to parse mail."))
-		log.Fatal(err)
+		LogError("Failed to parse mail", err)
 		return
 	}
 
@@ -44,7 +44,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	isVerified, err := Auth(r.Form)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
-		log.Printf("Error sending: %v", err)
+		LogError("Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
 		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
@@ -125,6 +125,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 		}
 		if err := scanner.Err(); err != nil {
 			eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue iterating over strings.")
+			LogError("Error reading from scanner", err)
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
@@ -143,6 +144,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
 				eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
+				LogError("Error inserting mail", err)
 				return
 			}
 		}
@@ -150,8 +152,9 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 		for _, pcRecipient := range pcRecipientIDs {
 			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
-				log.Println(err)
+				LogError("Error sending mail via SendGrid", err)
 				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue sending mail via SendGrid.")
+				return
 			}
 		}
 		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")

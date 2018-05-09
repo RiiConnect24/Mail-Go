@@ -34,4 +34,5 @@ type Config struct {
 	SendGridDomain  string
 	Debug           bool
 	PatchBaseDomain string
+	RavenDSN        string
 }

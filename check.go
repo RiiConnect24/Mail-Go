@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -14,10 +13,10 @@ import (
 // challenge solving and future mail existence checking.
 // BUG(spotlightishere): Challenge solving isn't implemented whatsoever.
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
-	stmt, err := db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
+	mlchkidStmt, err := db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-		log.Fatal(err)
+		LogError("Unable to prepare check statement", err)
 		return
 	}
 	// Grab string of interval
@@ -37,7 +36,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	err = r.ParseForm()
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(320, "Unable to parse parameters."))
-		log.Fatal(err)
+		LogError("Unable to parse form", err)
 		return
 	}
 
@@ -52,11 +51,16 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	hash := hex.EncodeToString(hashByte[:])
 
 	// Check mlchkid
-	result, err := stmt.Query(hash)
+	result, err := mlchkidStmt.Query(hash)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
-		log.Fatal(err)
+		LogError("Unable to run mlchkid query", err)
 		return
+	}
+
+	mlidStatement, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	if err != nil {
+		LogError("Unable to prepare mlid statement", err)
 	}
 
 	// By default, we'll assume there's no mail.
@@ -68,14 +72,12 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	for result.Next() {
 		var mlid string
 		err = result.Scan(&mlid)
-		stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
-		if err != nil {
-			log.Fatal(err)
-		}
+
 		// Splice off w from mlid
-		storedMail, err := stmt.Query(mlid[1:])
+		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {
-			log.Fatal(err)
+			LogError("Unable to run mlid", err)
+			return
 		}
 
 		size := 0
@@ -86,7 +88,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		err = result.Err()
 		if err != nil {
 			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-			log.Fatal(err)
+			LogError("Unable to get user mail", err)
 			return
 		}
 
@@ -98,7 +100,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	err = result.Err()
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-		log.Fatal(err)
+		LogError("Generic database issue", err)
 		return
 	}
 

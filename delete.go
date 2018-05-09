@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 )
@@ -14,14 +13,14 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if err != nil {
 		// Welp, that went downhill fast.
 		fmt.Fprint(w, GenNormalErrorCode(440, "Database error."))
-		log.Fatal(err)
+		LogError("Error creating delete prepared statement", err)
 		return
 	}
 
 	isVerified, err := Auth(r.Form)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(541, "Something weird happened."))
-		log.Printf("Error deleting: %v", err)
+		LogError("Error parsing delete authentication", err)
 		return
 	} else if !isVerified {
 		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
@@ -40,7 +39,7 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	_, err = stmt.Exec(wiiID, actualDelnum)
 
 	if err != nil {
-		log.Fatal(err)
+		LogError("Error deleting from database", err)
 		fmt.Fprint(w, GenNormalErrorCode(541, "Issue deleting mail from the database."))
 	} else {
 		fmt.Fprint(w, GenSuccessResponse(),

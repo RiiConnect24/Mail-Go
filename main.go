@@ -14,12 +14,14 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"github.com/getsentry/raven-go"
 )
 
 var global patch.Config
 var db *sql.DB
 var templates *template.Template
 var salt []byte
+var ravenClient *raven.Client
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -62,7 +64,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 
 		fileWriter, _, err := r.FormFile("uploaded_config")
 		if err != nil || err == http.ErrMissingFile {
-			log.Printf("incorrect file: %v", err)
+			LogError("Incorrect file", err)
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
 			return
@@ -70,17 +72,18 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 
 		file, err := ioutil.ReadAll(fileWriter)
 		if err != nil {
-			log.Printf("unable to read file entirely: %v", err)
+			LogError("Unable to read file", err)
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email support@riiconnect24.net.\nError: %v", err)
 			return
 		}
 
-		patched, err := patch.ModifyNwcConfig(file, db, global, salt)
+		patched, err := patch.ModifyNwcConfig(file, db, global, ravenClient, salt)
 		if err != nil {
-			log.Printf("unable to patch: %v", err)
+			LogError("Unable to patch", err)
 			w.WriteHeader(http.StatusBadRequest)
 			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
+			return
 		}
 		w.Header().Add("Content-Type", "application/octet-stream")
 		w.Header().Add("Content-Disposition", "attachment; filename=\"nwc24msg.cfg\"")
@@ -136,6 +139,13 @@ func main() {
 	err = db.Ping()
 	if err != nil {
 		panic(err)
+	}
+
+	if global.RavenDSN != "" {
+		ravenClient, err = raven.New(global.RavenDSN)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// Load templates for HTML serving later on

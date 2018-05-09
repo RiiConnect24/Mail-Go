@@ -6,15 +6,15 @@ import (
 	"bytes"
 	"io/ioutil"
 	"database/sql"
-	"log"
 	"crypto/sha512"
 	"encoding/hex"
 	"fmt"
+	"github.com/getsentry/raven-go"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
-func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, salt []byte) ([]byte, error) {
+func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClient *raven.Client, salt []byte) ([]byte, error) {
 	if len(originalConfig) == 0 {
 		return nil, errors.New("config seems to be empty. double check you uploaded a file")
 	}
@@ -48,13 +48,13 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, salt []by
 
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
-		log.Printf("Database error: %v", err)
+		LogError(ravenClient, "Error preparing account statement", err)
 		return nil, err
 	}
 
 	_, err = stmt.Exec(mlid, mlchkidHash, passwdHash)
 	if err != nil {
-		log.Printf("Database error: %v", err)
+		LogError(ravenClient, "Error running account statement", err)
 		return nil, err
 	}
 

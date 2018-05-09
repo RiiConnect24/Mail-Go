@@ -3,7 +3,6 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -17,13 +16,14 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// Parse form.
 	err := r.ParseForm()
 	if err != nil {
-		log.Fatal(err)
+		LogError("Error parsing form", err)
+		return
 	}
 
 	isVerified, err := Auth(r.Form)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(531, "Something weird happened."))
-		log.Printf("Error receiving: %v", err)
+		LogError("Error receiving.", err)
 		return
 	} else if !isVerified {
 		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
@@ -43,11 +43,13 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 	stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
 	if err != nil {
-		log.Fatal(err)
+		LogError("Error preparing statement", err)
+		return
 	}
 	storedMail, err := stmt.Query(mlid)
 	if err != nil {
-		log.Fatal(err)
+		LogError("Error running query against mlid", err)
+		return
 	}
 
 	var totalMailOutput string
@@ -57,7 +59,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// Statement to mark as sent once put in mail output
 	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
 	if err != nil {
-		log.Fatal(err)
+		LogError("Error preparing sent statement", err)
+		return
 	}
 
 	// Loop through mail and make the output.
@@ -104,7 +107,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			// We're committed at this point. Mark it that way in the db.
 			_, err := updateMailState.Exec(mailId)
 			if err != nil {
-				log.Fatal(err)
+				LogError("Unable to mark mail as sent", err)
 			}
 		}
 	}
@@ -112,7 +115,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// Make sure nothing failed.
 	err = storedMail.Err()
 	if err != nil {
-		panic(err)
+		LogError("General database error", err)
 	}
 
 	request := fmt.Sprint("--", wc24MimeBoundary, "\r\n",

@@ -9,6 +9,8 @@ import (
 	"regexp"
 	"strconv"
 	"time"
+	"github.com/getsentry/raven-go"
+	"runtime"
 )
 
 // https://stackoverflow.com/a/31832326/3874884
@@ -83,4 +85,20 @@ func GenSuccessResponseTyped(divider string) string {
 // BUG(spotlightishere): does not actually determine at a numerical level if valid.
 func friendCodeIsValid(wiiID string) bool {
 	return mailRegex.MatchString(wiiID)
+}
+
+func LogError(reason string, err error) {
+	// Adapted from
+	// https://stackoverflow.com/a/38551362
+	pc, _, _, ok := runtime.Caller(1)
+	details := runtime.FuncForPC(pc)
+	if ok && details != nil {
+		// Log to console
+		log.Printf("%s: %v", reason, err)
+
+		// and if it's available, Sentry.
+		if ravenClient != nil {
+			raven.CaptureError(err, map[string]string{"given_reason": reason})
+		}
+	}
 }

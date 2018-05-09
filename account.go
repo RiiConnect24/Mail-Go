@@ -32,7 +32,7 @@ func Account(w http.ResponseWriter, r *http.Request) {
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`passwd`, `mlchkid` ) VALUES (?, ?, ?)")
 	if err != nil {
 		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
-		log.Fatal(err)
+		LogError("Unable to prepare account statement", err)
 		return
 	}
 
@@ -47,14 +47,14 @@ func Account(w http.ResponseWriter, r *http.Request) {
 	result, err := stmt.Exec(wiiID, passwdHash, mlchkidHash)
 	if err != nil {
 		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
-		log.Println(err)
+		LogError("Unable to execute statement", err)
 		return
 	}
 
 	affected, err := result.RowsAffected()
 	if err != nil {
 		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
-		log.Println(err)
+		LogError("Unable to get rows affected", err)
 		return
 	}
 
@@ -70,9 +70,8 @@ func Account(w http.ResponseWriter, r *http.Request) {
 }
 
 func GenAccountErrorCode(error int, is string, reason string) string {
-	if error == 410 {
-		log.Println(aurora.Red("[Warning]"), "Encountered error", error, "with reason", reason)
-	}
+	log.Println(aurora.Red("[Warning]"), "Encountered error", error, "with reason", reason)
+
 	return fmt.Sprint(
 		"cd", is, strconv.Itoa(error), "\n",
 		"msg", is, reason, "\n")
