@@ -1,5 +1,5 @@
 # Mail-Go
-[![License](https://img.shields.io/github/license/riiconnect24/file-maker.svg?style=flat-square)](http://www.gnu.org/licenses/agpl-3.0)
+[![License](https://img.shields.io/github/license/riiconnect24/mail-go.svg?style=flat-square)](http://www.gnu.org/licenses/agpl-3.0)
 ![Production List](https://img.shields.io/discord/206934458954153984.svg?style=flat-square)
 [![Go Report Card](https://goreportcard.com/badge/github.com/RiiConnect24/Mail-Go?style=flat-square)](https://goreportcard.com/report/github.com/RiiConnect24/Mail-Go)
 
