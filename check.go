@@ -1,6 +1,8 @@
 package main
 
 import (
+	"crypto/hmac"
+	"crypto/sha1"
 	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
@@ -11,8 +13,10 @@ import (
 
 // Check handles adding the proper interval for check.cgi along with future
 // challenge solving and future mail existence checking.
-// BUG(spotlightishere): Challenge solving isn't implemented whatsoever.
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
+	// Used later on for challenge solving.
+	var res string
+
 	mlchkidStmt, err := db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
@@ -25,12 +29,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 	w.Header().Add("X-Wii-Mail-Download-Span", interval)
 	w.Header().Add("X-Wii-Mail-Check-Span", interval)
-
-	// HMAC key most likely used for `chlng`
-	// TODO: insert hmac thing
-	// "ce4cf29a3d6be1c2619172b5cb298c8972d450ad" is the actual
-	// hmac key, according to Larsenv.
-	hmacKey := "ce4cf29a3d6be1c2619172b5cb298c8972d450ad"
 
 	// Parse form in preparation for finding mail.
 	err = r.ParseForm()
@@ -64,7 +62,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	}
 
 	// By default, we'll assume there's no mail.
-	mailFlag := "0"
+	mailFlag := "000000000000000000000000000000000"
 	resultsLoop := 0
 	size := 0
 
@@ -73,6 +71,12 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	for result.Next() {
 		var mlid string
 		err = result.Scan(&mlid)
+
+		key := []byte("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
+		h := hmac.New(sha1.New, key)
+		h.Write([]byte(mlid))
+		h.Write([]byte(r.Form.Get("chlng")))
+		res = hex.EncodeToString(h.Sum(nil))
 
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
@@ -112,14 +116,14 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	if size > 0 {
 		// mailFlag needs to be not one, apparently.
 		// The Wii will refuse to check otherwise.
-		mailFlag = "99"
+		mailFlag = "799197837977475F84ZX53ZZ5F9998W43"
 	} else {
 		// mailFlag was already set to 0 above.
 	}
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
 	fmt.Fprint(w, GenSuccessResponse(),
-		"res=", hmacKey, "\n",
+		"res=", res, "\n",
 		"mail.flag=", mailFlag, "\n",
 		"interval=", interval)
 }
