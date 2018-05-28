@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/RiiConnect24/Mail-Go/patch"
-	"github.com/coreos/go-systemd/daemon"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
 	"html/template"
@@ -14,6 +13,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"regexp"
 	"github.com/getsentry/raven-go"
 )
 
@@ -172,6 +172,11 @@ func main() {
 	http.HandleFunc("/cgi-bin/delete.cgi", deleteHandler)
 	http.HandleFunc("/cgi-bin/send.cgi", sendHandler)
 
+	mailDomain = regexp.MustCompile(`w(\d{16})\@(` + global.SendGridDomain + `)`)
+
+	// Inbound parse
+	http.HandleFunc("/sendgrid/parse", sendGridHandler)
+
 	// Site
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		// We only want the primary page.
@@ -193,10 +198,6 @@ func main() {
 	})
 	http.HandleFunc("/patch", configHandle)
 
-	// Allow systemd to run as notify
-	// Thanks to https://vincent.bernat.im/en/blog/2017-systemd-golang
-	// for the following things.
-	daemon.SdNotify(false, "READY=1")
 	log.Println("Running...")
 
 	// We do this to log all access to the page.

@@ -8,7 +8,6 @@ import (
 	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
-	//"net/smtp"
 	"regexp"
 	"strings"
 )

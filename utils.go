@@ -87,6 +87,11 @@ func friendCodeIsValid(wiiID string) bool {
 	return mailRegex.MatchString(wiiID)
 }
 
+// GenerateBoundary returns a string with the format Nintendo used for boundaries.
+func GenerateBoundary() string {
+	return fmt.Sprint(time.Now().Format("200601021504"), "/", random(1000000, 9999999))
+}
+
 func LogError(reason string, err error) {
 	// Adapted from
 	// https://stackoverflow.com/a/38551362

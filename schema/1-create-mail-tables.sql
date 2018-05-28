@@ -44,7 +44,7 @@ DROP TABLE IF EXISTS `mails`;
 CREATE TABLE `mails` (
   `mail_id` varchar(255) NOT NULL,
   `message_id` varchar(255) NOT NULL,
-  `sender_wiiID` varchar(17) DEFAULT NULL,
+  `sender_wiiID` varchar(255) DEFAULT NULL,
   `mail` mediumtext,
   `recipient_id` varchar(16) DEFAULT NULL,
   `sent` tinyint(1) NOT NULL DEFAULT '0',

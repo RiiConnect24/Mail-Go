@@ -66,6 +66,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	// By default, we'll assume there's no mail.
 	mailFlag := "0"
 	resultsLoop := 0
+	size := 0
 
 	// Scan through returned rows.
 	defer result.Close()
@@ -80,7 +81,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 			return
 		}
 
-		size := 0
 		defer storedMail.Close()
 		for storedMail.Next() {
 			size++
@@ -93,7 +93,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		}
 
 		// Set mail flag to number of mail taken from database
-		mailFlag = strconv.Itoa(size)
 		resultsLoop++
 	}
 
@@ -108,6 +107,14 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		// Looks like that user didn't exist.
 		fmt.Fprintf(w, GenNormalErrorCode(220, "Invalid authentication."))
 		return
+	}
+
+	if size > 0 {
+		// mailFlag needs to be not one, apparently.
+		// The Wii will refuse to check otherwise.
+		mailFlag = "99"
+	} else {
+		// mailFlag was already set to 0 above.
 	}
 
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format

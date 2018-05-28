@@ -1,6 +1,18 @@
 version: "3"
 
 services:
+  database:
+    image: disconnect24/docker-alpine-mariadb
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "true"
+      MYSQL_USER: rc24
+      MYSQL_PASSWORD: changeme
+    ports:
+      # Container 80 -> Host 8080
+      - "3306:3306"
+    volumes:
+      - mail_data:/var/lib/mysql
+      - ./schema/:/docker-entrypoint-initdb.d/:ro
   mail:
     build: .
     # Mail-Go runs in /, and it looks for config in the current dir. Hence /config
@@ -12,18 +24,6 @@ services:
     # We must wait for the DB to import/etc before starting ourselves.
     depends_on:
       - "database"
-  database:
-    image: mysql:5
-    environment:
-      MYSQL_RANDOM_ROOT_PASSWORD: "true"
-      MYSQL_USER: rc24
-      MYSQL_PASSWORD: changeme
-    ports:
-      # Container 80 -> Host 8080
-      - "3306:3306"
-    volumes:
-      - mail_data:/var/lib/mysql
-      - ./schema/:/docker-entrypoint-initdb.d/:ro
 
 volumes:
   mail_data:
