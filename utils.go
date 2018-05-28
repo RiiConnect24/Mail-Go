@@ -2,15 +2,15 @@ package main
 
 import (
 	"fmt"
+	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
 	"log"
 	"math/rand"
 	"regexp"
+	"runtime"
 	"strconv"
 	"time"
-	"github.com/getsentry/raven-go"
-	"runtime"
 )
 
 // https://stackoverflow.com/a/31832326/3874884

@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/google/uuid"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/mail"
-	"io/ioutil"
-	"github.com/google/uuid"
 	"regexp"
 )
 
@@ -69,7 +69,6 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("error formulating mail: %v", err)
 		return
 	}
-
 
 	// On a normal Wii service, we'd return the cd/msg response.
 	// This goes to SendGrid, and we hope the database error is resolved

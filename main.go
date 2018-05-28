@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
 	"html/template"
@@ -14,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"github.com/getsentry/raven-go"
 )
 
 var global patch.Config
