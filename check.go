@@ -116,7 +116,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	if size > 0 {
 		// mailFlag needs to be not one, apparently.
 		// The Wii will refuse to check otherwise.
-		mailFlag = "799197837977475F84ZX53ZZ5F9998W43"
+		mailFlag = RandStringBytesMaskImprSrc(33) // This isn't how Nintendo did the mail flag, how they did it is currently unknown.
 	} else {
 		// mailFlag was already set to 0 above.
 	}
