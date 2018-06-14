@@ -57,6 +57,10 @@ func sendHandler(w http.ResponseWriter, r *http.Request) {
 	Send(w, r, db, global)
 }
 
+func sendGridHandler(w http.ResponseWriter, r *http.Request) {
+	SendGrid(w, r, db)
+}
+
 func configHandle(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "POST":

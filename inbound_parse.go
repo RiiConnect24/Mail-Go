@@ -8,11 +8,12 @@ import (
 	"net/http"
 	"net/mail"
 	"regexp"
+	"database/sql"
 )
 
 var mailDomain *regexp.Regexp
 
-func sendGridHandler(w http.ResponseWriter, r *http.Request) {
+func SendGrid(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// We sincerely hope someone won't attempt to send more than a 11MB image.
 	// but, if they do, now they have 10mb for image and 1mb for text + etc
 	// (still probably too much)
