@@ -24,9 +24,8 @@ FROM disconnect24/docker-mail-runtime-base
 WORKDIR /
 COPY --from=builder /go/src/github.com/RiiConnect24/Mail-Go/app .
 
-# Copy for site templates.
-RUN mkdir -p patch/templates
-ADD patch/templates patch/templates
+RUN mkdir /site
+ADD patch/site /site
 
 # Wait until there's an actual MySQL connection we can use to start.
 CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/app"]
