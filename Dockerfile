@@ -29,4 +29,5 @@ RUN mkdir -p patch/templates
 ADD patch/templates patch/templates
 
 # Wait until there's an actual MySQL connection we can use to start.
-CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/app"]
+#CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/app"]
+CMD ["/app"]
