@@ -24,4 +24,5 @@ RUN go get ./...
 RUN GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o app .
 
 # Wait until there's an actual MySQL connection we can use to start.
-CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/go/src/Mail-Go/app"]
+# CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/go/src/Mail-Go/app"]
+CMD ["/app"]
