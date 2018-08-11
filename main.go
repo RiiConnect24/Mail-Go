@@ -5,11 +5,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/Disconnect24/Mail-Go/patch"
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
-	"html/template"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -19,7 +18,6 @@ import (
 
 var global patch.Config
 var db *sql.DB
-var templates *template.Template
 var salt []byte
 var ravenClient *raven.Client
 
@@ -55,10 +53,6 @@ func deleteHandler(w http.ResponseWriter, r *http.Request) {
 
 func sendHandler(w http.ResponseWriter, r *http.Request) {
 	Send(w, r, db, global)
-}
-
-func sendGridHandler(w http.ResponseWriter, r *http.Request) {
-	SendGrid(w, r, db)
 }
 
 func configHandle(w http.ResponseWriter, r *http.Request) {
@@ -152,22 +146,6 @@ func main() {
 		}
 	}
 
-	// Load templates for HTML serving later on
-	templateLocation := "./patch/templates"
-	templateDir, err := os.Open(templateLocation)
-	if err != nil {
-		panic(err)
-	}
-	templateDirList, err := templateDir.Readdir(-1)
-	if err != nil {
-		panic(err)
-	}
-	var templatePaths []string
-	for _, templateFile := range templateDirList {
-		templatePaths = append(templatePaths, fmt.Sprint(templateLocation, "/", templateFile.Name()))
-	}
-	templates, err = template.ParseFiles(templatePaths...)
-
 	// Mail calls
 	http.HandleFunc("/cgi-bin/account.cgi", Account)
 	http.HandleFunc("/cgi-bin/patcher.cgi", Account)
@@ -182,25 +160,25 @@ func main() {
 	http.HandleFunc("/sendgrid/parse", sendGridHandler)
 
 	// Site
+	http.HandleFunc("/patch", configHandle)
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// We only want the primary page.
-		if r.URL.Path != "/" {
+		// Load from site folder
+		var file []byte
+		var err error
+		if r.URL.Path == "/" {
+			// We want index.html
+			file, err = ioutil.ReadFile("./patch/site/index.html")
+		} else {
+			file, err = ioutil.ReadFile("./patch/site" + r.URL.Path)
+		}
+
+		// We only want existing pages.
+		if err != nil {
 			http.NotFound(w, r)
 			return
 		}
-
-		s1 := templates.Lookup("header.tmpl")
-		s1.ExecuteTemplate(w, "header", nil)
-		fmt.Println()
-		s2 := templates.Lookup("patch.tmpl")
-		s2.ExecuteTemplate(w, "content", nil)
-		fmt.Println()
-		s3 := templates.Lookup("footer.tmpl")
-		s3.ExecuteTemplate(w, "footer", nil)
-		fmt.Println()
-		s3.Execute(w, nil)
+		w.Write(file)
 	})
-	http.HandleFunc("/patch", configHandle)
 
 	log.Println("Running...")
 
