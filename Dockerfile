@@ -9,20 +9,19 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     # Clean packages
     && rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && apt-get clean
 
-# Pre-download listed dependencies to take
-# advantage of Docker cache.
-RUN mkdir -p /go/src/Mail-Go
-WORKDIR /go/src/Mail-Go
-COPY get.sh /go/src/Mail-Go
+# We use Disconnnect24 as the name is hardcoded into patch's source code.
+WORKDIR /go/src/github.com/Disconnect24/Mail-Go
+COPY get.sh /go/src/github.com/Disconnect24/Mail-Go
 RUN sh get.sh
 
-# Copy the entire Mail-Go source into builder's source.
-COPY . .
+# Copy needed parts of the Mail-Go source into builder's source,
+COPY *.go ./
+COPY patch patch
+
 RUN go get ./...
 
 # Build to name "app".
 RUN GOOS=linux GOARCH=amd64 go build -a -installsuffix cgo -o app .
 
 # Wait until there's an actual MySQL connection we can use to start.
-# CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/go/src/Mail-Go/app"]
-CMD ["/app"]
+CMD ["dockerize", "-wait", "tcp://127.0.0.1:3306", "-timeout", "60s", "/go/src/github.com/Disconnect24/Mail-Go/app"]

@@ -1,35 +1,43 @@
 <!doctype html>
 <html>
 <head>
-<meta charset="utf-8">
-<title>Disconnect24 Patcher</title>
-<style type="text/css">
-.default {
-	font-family: Gill Sans, Gill Sans MT, Myriad Pro, DejaVu Sans Condensed, Helvetica, Arial, sans-serif;
-	text-align: center;
-	color: #FFFFFF;
-	background-color: black
-}
-</style>
+    <title>RiiConnect24 Mail</title>
+    <link rel="stylesheet" href="https://code.getmdl.io/1.3.0/material.blue-teal.min.css" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
+<body>
 
-<body class="default">
-	<div/>
-<h1>Disconnect24 Mail</h1>
-<p><img src="DC24logo.png" width="531" height="187" alt=""/>
-</p>
-<h2>Mail Patcher v1.2</h2>
-	<h3>This time it actually works.™</h3>
-	<p>Upload your nwc24msg.cfg below to register your Wii.</p>
-	<form action="/patch" method="post" enctype="multipart/form-data" class="dropzone">
-    		<div class="default">
-    <input type="file" name="uploaded_config" class="textB"/><span class="textB"><br/><br/>
-    			</span>
-    <input class="textB" type="submit" value="Upload and Patch!"/><span class="textB">
-				</span>
-			</div>
-		<h4>Recommendation: You should use the Disconnect24 Patcher at:</h4>
-		<h5>https://github.com/Disconnect24/dc24-channel/releases</h5>
-</form>
+<div class="mdl-layout mdl-js-layout mdl-layout--fixed-header">
+  <header class="mdl-layout__header">
+    <div class="mdl-layout__header-row">
+      <span class="mdl-layout-title">RiiConnect24 Mail</span>
+      <div class="mdl-layout-spacer"></div>
+      <nav class="mdl-navigation">
+        <a class="mdl navigation__link" style="color:white; text-decoration: none;" href="https://rc24.xyz">Home</a>
+        <a class="mdl-navigation__link" href="#patch">Patch!</a>
+      </nav>
+    </div>
+  </header>
+
+<main class="mdl-layout__content">
+	<div class="page-content">
+		<div id="patch">
+			<h3>Patch:</h3>
+			<h4>Please submit your config with the form; we'll register you right away!</h4>
+			<form action="/patch" method="post" enctype="multipart/form-data" class="dropzone">
+				<input type="file" name="uploaded_config">
+				<br/>
+				<br/>
+				<input class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent" type="submit" value="Upload and Patch!">
+			</form>
+			<br/>
+			<p>Recommendation: You should use the Mail Patcher that runs as Wii homebrew, <a href="https://github.com/RiiConnect24/Mail-Patcher/releases">click here for the link</a>. Only use this patcher if you are experiencing a problem using the app.</p>
+		</div>
+</main>
+
+<!-- Begin Footer -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+<script defer src="https://code.getmdl.io/1.3.0/material.min.js"></script>
 </body>
+
 </html>
