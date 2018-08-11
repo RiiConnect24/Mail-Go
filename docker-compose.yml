@@ -24,6 +24,7 @@ services:
     # We must wait for the DB to import/etc before starting ourselves.
     depends_on:
       - "database"
+  restart: on-failure
 
 volumes:
   mail_data:
