@@ -3,7 +3,7 @@ package main
 import (
 	"encoding/base64"
 	"fmt"
-	"github.com/Disconnect24/lilliput"
+	"github.com/discordapp/lilliput"
 	"log"
 	"strings"
 )
