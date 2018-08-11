@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/Disconnect24/Mail-Go/patch"
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
@@ -167,9 +167,9 @@ func main() {
 		var err error
 		if r.URL.Path == "/" {
 			// We want index.html
-			file, err = ioutil.ReadFile("/site/index.html")
+			file, err = ioutil.ReadFile("./patch/site/index.html")
 		} else {
-			file, err = ioutil.ReadFile("/site" + r.URL.Path)
+			file, err = ioutil.ReadFile("./patch/site" + r.URL.Path)
 		}
 
 		// We only want existing pages.
