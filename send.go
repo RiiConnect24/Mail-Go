@@ -4,7 +4,7 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/Disconnect24/Mail-Go/patch"
 	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
