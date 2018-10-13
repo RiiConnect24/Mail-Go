@@ -8,12 +8,11 @@ import (
 	"net/http"
 	"net/mail"
 	"regexp"
-	"database/sql"
 )
 
 var mailDomain *regexp.Regexp
 
-func SendGrid(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	// We sincerely hope someone won't attempt to send more than a 11MB image.
 	// but, if they do, now they have 10mb for image and 1mb for text + etc
 	// (still probably too much)
@@ -23,12 +22,19 @@ func SendGrid(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
+        text := r.Form.Get("text")
+
 	// TODO: Properly verify attachments.
-	if r.Form.Get("from") == "" || r.Form.Get("to") == "" || r.Form.Get("text") == "" {
+	if r.Form.Get("from") == "" || r.Form.Get("to") == "" {
 		// something was nil
 		log.Println("Something happened to SendGrid... is someone else accessing?")
 		return
 	}
+
+        // If there's no text in the email.
+        if text == "" {
+                text = "No message provided."
+        }
 
 	// Figure out who sent it.
 	fromAddress, err := mail.ParseAddress(r.Form.Get("from"))
@@ -65,7 +71,7 @@ func SendGrid(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		}
 	}
 
-	wiiMail, err := FormulateMail(fromAddress.Address, toAddress, r.Form.Get("subject"), r.Form.Get("text"), attachedFile)
+	wiiMail, err := FormulateMail(fromAddress.Address, toAddress, r.Form.Get("subject"), text, attachedFile)
 	if err != nil {
 		log.Printf("error formulating mail: %v", err)
 		return
