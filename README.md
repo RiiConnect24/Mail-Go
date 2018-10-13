@@ -17,5 +17,5 @@ You can use `docker-compose up` to start up both MariaDB and Mail-Go.
 You're welcome to `POST /patch` with a `nwc24msg.cfg` under form key `uploaded_config`.
 
 # What should I do if I'm adding a new dependency?
-There's a `get.sh` script that has all major external dependencies. This allows us to cache `go get`.
+There's a `get.sh` and a `get.bat` script that has all major external dependencies. This allows us to cache `go get`.
 If you're adding another dependency, it's recommended you add that to the script.
