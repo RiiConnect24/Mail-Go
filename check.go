@@ -72,14 +72,17 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		var mlid string
 		err = result.Scan(&mlid)
 
-		key := []byte("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
+                key, err := hex.DecodeString("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
+                if err != nil {
+                        LogError("Unable to decode key", err)
+                }
 
 		chlng, err := hex.DecodeString(r.Form.Get("chlng"))
 		if err != nil {
 			LogError("Unable to decode chlng string", err)
 		}
 
-		h := hmac.New(sha1.New, key)
+		h := hmac.New(sha1.New, []byte(key))
 		h.Write([]byte(mlid))
 		h.Write([]byte(chlng))
 		res = hex.EncodeToString(h.Sum(nil))
