@@ -42,7 +42,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	// Now check if it can be verified
 	isVerified, err := Auth(r.Form)
 	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(666, "Something weird happened."))
+		fmt.Fprintf(w, GenNormalErrorCode(551, "Something weird happened."))
 		LogError("Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
