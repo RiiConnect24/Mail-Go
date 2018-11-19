@@ -46,7 +46,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 		LogError("Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
+		fmt.Fprintf(w, GenNormalErrorCode(250, "An authentication error occurred."))
 		return
 	}
 
