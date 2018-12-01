@@ -1,17 +1,35 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/base64"
 	"fmt"
-	"github.com/discordapp/lilliput"
+	"io/ioutil"
 	"log"
 	"strings"
+
+	"github.com/Disconnect24/Mail-GO/utilities"
+	"github.com/nfnt/resize"
+
+	"image"
+	// We use jpeg to actually send to the Wii.
+	"image/jpeg"
+
+	// We don't actually use the following formats for encoding,
+	// they're here for image format detection.
+	_ "image/gif"
+	_ "image/png"
+
+	_ "golang.org/x/image/bmp"
+	_ "golang.org/x/image/tiff"
+	_ "golang.org/x/image/webp"
 )
 
 const CRLF = "\r\n"
 
 func FormulateMail(from string, to string, subject string, body string, potentialImage []byte) (string, error) {
-	boundary := GenerateBoundary()
+	boundary := utilities.GenerateBoundary()
 
 	// Set up headers and set up first boundary with body.
 	// The body could be empty: that's fine, it'll have no value
@@ -39,66 +57,41 @@ func FormulateMail(from string, to string, subject string, body string, potentia
 		return normalMailFormat, nil
 	}
 
-	decoder, err := lilliput.NewDecoder(potentialImage)
-	if err != nil {
-		// It's not valid for whatever reason. Ignore it.
-		return normalMailFormat, nil
-	}
-	defer decoder.Close()
+	// The image library interprets known file types automatically.
+	givenImg, _, err := image.Decode(bytes.NewReader(potentialImage))
 
-	// Buffer for image to return.
-	// The Wii's receive mailbox is 7.3MB roughly.
-	// We're going to have it be 7MB max output.
-	outputImg := make([]byte, 7*1024*1024)
+	// The Wii has a max image size of 8192x8192px.
+	// If any dimension exceeds that, scale to fit.
+	outputImg := resize.Thumbnail(8192, 8192, givenImg, resize.Lanczos3)
 
-	// The Wii has a max image size of
-	// 8192x8192px. If any dimension
-	// exceeds that, stretch to fit.
-	ops := lilliput.NewImageOps(8192)
-	defer ops.Close()
-
-	header, err := decoder.Header()
-	if err != nil {
-		log.Printf("error decoding image header: %v", err)
-		return normalMailFormat, nil
-	}
-
-	opts := &lilliput.ImageOptions{
-		FileType:             ".jpeg",
-		Width:                header.Width(),
-		Height:               header.Height(),
-		ResizeMethod:         lilliput.ImageOpsResize,
-		NormalizeOrientation: true,
-		EncodeOptions:        map[int]int{lilliput.JpegQuality: 85},
-	}
-
-	// Actually resize image.
-	outputImg, err = ops.Transform(decoder, opts, outputImg)
+	// Encode image as JPEG for the Wii to handle.
+	var outputImgWriter bytes.Buffer
+	err = jpeg.Encode(bufio.NewWriter(&outputImgWriter), outputImg, nil)
 	if err != nil {
 		log.Printf("Error transforming image: %v", err)
-		// Inform the user an error occurred.
-		return fmt.Sprint(mailContent,
-			body,
-			CRLF,
-			"---",
-			CRLF,
-			"An error occurred processing the attached image.", CRLF,
-			"For more information, ask the sender to forward this mail to support@riiconnect24.net.",
-			strings.Repeat(CRLF, 3),
-			"--", boundary, "--"), nil
+		return genError(mailContent, body, boundary), err
 	}
 
-	encodedImage := base64.StdEncoding.EncodeToString(outputImg)
+	outputImgBytes, err := ioutil.ReadAll(bufio.NewReader(&outputImgWriter))
+	if err != nil {
+		log.Printf("Error transforming image: %v", err)
+		return genError(mailContent, body, boundary), err
+	}
+
+	// The Wii's mailbox is roughly 7.3mb.
+	// We'll cap any generated image at 7mb.
+	if len(outputImgBytes) > 7*1024*1024 {
+		return genError(mailContent, body, boundary), nil
+	}
+
+	encodedImage := base64.StdEncoding.EncodeToString(outputImgBytes)
 
 	var splitEncoding string
-
 	// 76 is a widely accepted base64 newline max char standard for mail.
 	for {
-		// If we have 73 characters or less, carry on.
 		if len(encodedImage) >= 76 {
-			// Otherwise, separate the next 73.
+			// Separate the next 73.
 			splitEncoding += encodedImage[:76] + CRLF
-			// Chop off what was just done for next loop.
 			encodedImage = encodedImage[76:]
 		} else {
 			// To the end.
@@ -120,4 +113,16 @@ func FormulateMail(from string, to string, subject string, body string, potentia
 		CRLF,
 		"--", boundary, "--",
 	), nil
+}
+
+func genError(mailContent string, body string, boundary string) string {
+	return fmt.Sprint(mailContent,
+		body,
+		CRLF,
+		"---",
+		CRLF,
+		"An error occurred processing the attached image.", CRLF,
+		"For more information, ask the sender to forward this mail to support@riiconnect24.net.",
+		strings.Repeat(CRLF, 3),
+		"--", boundary, "--")
 }
