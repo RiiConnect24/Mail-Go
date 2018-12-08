@@ -5,7 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/Disconnect24/Mail-Go/patch"
+	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"

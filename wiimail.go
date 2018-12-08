@@ -9,7 +9,6 @@ import (
 	"log"
 	"strings"
 
-	"github.com/Disconnect24/Mail-GO/utilities"
 	"github.com/nfnt/resize"
 
 	"image"
@@ -29,7 +28,7 @@ import (
 const CRLF = "\r\n"
 
 func FormulateMail(from string, to string, subject string, body string, potentialImage []byte) (string, error) {
-	boundary := utilities.GenerateBoundary()
+	boundary := GenerateBoundary()
 
 	// Set up headers and set up first boundary with body.
 	// The body could be empty: that's fine, it'll have no value
