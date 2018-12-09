@@ -29,4 +29,4 @@ RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSI
     && rm dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz && apk add -U --no-cache ca-certificates
 
 # Wait until there's an actual MySQL connection we can use to start.
-CMD ["dockerize", "-wait", "tcp://database:3306", "-timeout", "60s", "/go/src/github.com/RiiConnect24/Mail-Go/app"]
+ENTRYPOINT ["/go/src/github.com/RiiConnect24/Mail-Go/app"]
