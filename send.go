@@ -2,15 +2,15 @@ package main
 
 import (
 	"bufio"
-	"database/sql"
 	"fmt"
-	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
 	"regexp"
 	"strings"
+
+	"github.com/RiiConnect24/Mail-Go/utilities"
+	"github.com/google/uuid"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
@@ -25,7 +25,7 @@ func Send(c *gin.Context) {
 	if err != nil {
 		// Welp, that went downhill fast.
 		ErrorResponse(c, 450, "Database error.")
-		utilities.LogError("Prepared send statement error", err)
+		utilities.LogError(ravenClient, "Prepared send statement error", err)
 		return
 	}
 
@@ -36,7 +36,7 @@ func Send(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil {
 		ErrorResponse(c, 350, "Failed to parse mail.")
-		utilities.LogError("Failed to parse mail", err)
+		utilities.LogError(ravenClient, "Failed to parse mail", err)
 		return
 	}
 
@@ -44,7 +44,7 @@ func Send(c *gin.Context) {
 	isVerified, err := AuthForSend(c.PostForm("mlid"))
 	if err != nil {
 		ErrorResponse(c, 666, "Something weird happened.")
-		utilities.LogError("Error changing from authentication database.", err)
+		utilities.LogError(ravenClient, "Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
 		ErrorResponse(c, 240, "An authentication error occurred.")
@@ -62,40 +62,35 @@ func Send(c *gin.Context) {
 
 	// Handle all the mail! \o/
 	for mailNumber, contents := range mailPart {
-		var linesToRemove string
-		// I'm making this a string for similar reasons as below.
-		// Plus it beats repeated `strconv.Itoa`s
 		var wiiRecipientIDs []string
 		var pcRecipientIDs []string
-		// Yes, senderID is a string. >.<
+		// senderID must be a string.
 		// The database contains `w<16 digit ID>` due to previous PHP scripts.
 		// POTENTIAL TODO: remove w from database?
 		var senderID string
-		var data string
+		var mailContents string
 
 		// For every new line, handle as needed.
 		scanner := bufio.NewScanner(strings.NewReader(contents))
 		for scanner.Scan() {
 			line := scanner.Text()
-			// Add it to this mail's overall data.
-			data += fmt.Sprintln(line)
 
 			if line == "DATA" {
-				// We don't actually need to do anything here,
-				// just carry on.
-				linesToRemove += fmt.Sprintln(line)
-				continue
+				// This line just tells the server beyond here to stop processing
+				// We shouldn't send that to the client, so we're done.
+				break
 			}
 
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
+				// "Special" number from Nintendo, used to send to allusers@wii.com.
+				// While not necessarily hardcoded anywhere, no need to confuse.
 				if potentialMailFrom == "w9999999900000000" {
 					eventualOutput += MailErrorResponse(351, "w9999999900000000 tried to send mail.", mailNumber)
-					break
+					return
 				}
 				senderID = potentialMailFrom
-				linesToRemove += fmt.Sprintln(line)
 				continue
 			}
 
@@ -106,31 +101,31 @@ func Send(c *gin.Context) {
 				potentialRecipient := potentialRecipientWrapper[0]
 
 				// layout:
-				// potentialRecipient[0] = original matched string w/o groups
 				// potentialRecipient[1] = w<16 digit ID>
 				// potentialRecipient[2] = domain being sent to
 				if potentialRecipient[2] == "wii.com" {
 					// We're not gonna allow you to send to a defunct domain. ;P
-				} else if potentialRecipient[2] == config.SendGridDomain {
+				} else if potentialRecipient[2] == global.SendGridDomain {
 					// Wii <-> Wii mail. We can handle this.
 					wiiRecipientIDs = append(wiiRecipientIDs, potentialRecipient[1])
 				} else {
-					// PC <-> Wii mail. We can't handle this, but SendGrid can.
+					// PC <-> Wii mail. An actual mail server will handle this.
 					email := fmt.Sprintf("%s@%s", potentialRecipient[1], potentialRecipient[2])
 					pcRecipientIDs = append(pcRecipientIDs, email)
 				}
-
-				linesToRemove += fmt.Sprintln(line)
 			}
+
+			// This line doesn't need to be processed and can be added.
+			mailContents += line
 		}
+
 		if err := scanner.Err(); err != nil {
 			eventualOutput += MailErrorResponse(551, "Issue iterating over strings.", mailNumber)
-			utilities.LogError("Error reading from scanner", err)
+			utilities.LogError(ravenClient, "Error reading from scanner", err)
 			return
 		}
-		mailContents := strings.Replace(data, linesToRemove, "", -1)
-		// Replace all @wii.com references in the
-		// friend request email with our own domain.
+
+		// Replace all @wii.com references in the friend request email with our own domain.
 		// Format: w9004342343324713@wii.com <mailto:w9004342343324713@wii.com>
 		mailContents = strings.Replace(mailContents,
 			fmt.Sprintf("%s@wii.com <mailto:%s@wii.com>", senderID, senderID),
@@ -144,15 +139,15 @@ func Send(c *gin.Context) {
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
 				eventualOutput += MailErrorResponse(450, "Database error.", mailNumber)
-				utilities.LogError("Error inserting mail", err)
+				utilities.LogError(ravenClient, "Error inserting mail", err)
 				return
 			}
 		}
 
 		for _, pcRecipient := range pcRecipientIDs {
-			err := handlePCmail(config, senderID, pcRecipient, mailContents)
+			err := handlePCmail(senderID, pcRecipient, mailContents)
 			if err != nil {
-				utilities.LogError("Error sending mail via SendGrid", err)
+				utilities.LogError(ravenClient, "Error sending mail via SMTP", err)
 				eventualOutput += MailErrorResponse(551, "Issue sending mail via SMTP.", mailNumber)
 				return
 			}
@@ -164,13 +159,13 @@ func Send(c *gin.Context) {
 	c.String(http.StatusOK, eventualOutput)
 }
 
-func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {
+func handlePCmail(senderID string, pcRecipient string, mailContents string) error {
 	// Connect to the remote SMTP server.
 	host := "smtp.sendgrid.net"
 	auth := smtp.PlainAuth(
 		"",
 		"apikey",
-		config.SendGridKey,
+		global.SendGridKey,
 		host,
 	)
 	// The only reason we can get away with the following is
@@ -178,7 +173,7 @@ func handlePCmail(config patch.Config, senderID string, pcRecipient string, mail
 	return smtp.SendMail(
 		fmt.Sprint(host, ":587"),
 		auth,
-		fmt.Sprintf("%s@%s", senderID, config.SendGridDomain),
+		fmt.Sprintf("%s@%s", senderID, global.SendGridDomain),
 		[]string{pcRecipient},
 		[]byte(mailContents),
 	)

@@ -1,4 +1,4 @@
-package patch
+package utilities
 
 var ConfigMagic = []byte("WcCf")
 

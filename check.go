@@ -4,12 +4,13 @@ import (
 	"crypto/hmac"
 	"crypto/sha1"
 	"crypto/sha512"
-	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/RiiConnect24/Mail-Go/utilities"
 )
 
 // Check handles adding the proper interval for check.cgi along with future
@@ -21,18 +22,18 @@ func Check(c *gin.Context) {
 	mlchkidStmt, err := db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
 	if err != nil {
 		ErrorResponse(c, 420, "Unable to formulate authentication statement.")
-		utilities.LogError("Unable to prepare check statement", err)
+		utilities.LogError(ravenClient, "Unable to prepare check statement", err)
 		return
 	}
 	// Grab string of interval
-	interval := strconv.Itoa(inter)
+	interval := strconv.Itoa(global.Interval)
 	// Add required headers
 	c.Header("Content-Type", "text/plain;charset=utf-8")
 	c.Header("X-Wii-Mail-Download-Span", interval)
 	c.Header("X-Wii-Mail-Check-Span", interval)
 
+	// Parse form in preparation for finding mail.
 	mlchkid := c.PostForm("mlchkid")
-
 	if mlchkid == "" {
 		ErrorResponse(c, 320, "Unable to parse parameters.")
 		return
@@ -52,7 +53,7 @@ func Check(c *gin.Context) {
 
 	mlidStatement, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
 	if err != nil {
-		utilities.LogError("Unable to prepare mlid statement", err)
+		utilities.LogError(ravenClient, "Unable to prepare mlid statement", err)
 	}
 
 	// By default, we'll assume there's no mail.
@@ -66,14 +67,14 @@ func Check(c *gin.Context) {
 		var mlid string
 		err = result.Scan(&mlid)
 
-                key, err := hex.DecodeString("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
-                if err != nil {
-                        utilities.LogError("Unable to decode key", err)
-                }
-
-		chlng, err := hex.DecodeString(c.Query("chlng"))
+		key, err := hex.DecodeString("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
 		if err != nil {
-			utilities.LogError("Unable to decode chlng string", err)
+			utilities.LogError(ravenClient, "Unable to decode key", err)
+		}
+
+		chlng, err := hex.DecodeString(c.PostForm("chlng"))
+		if err != nil {
+			utilities.LogError(ravenClient, "Unable to decode chlng string", err)
 		}
 
 		h := hmac.New(sha1.New, []byte(key))
@@ -84,7 +85,7 @@ func Check(c *gin.Context) {
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {
-			utilities.LogError("Unable to run mlid", err)
+			utilities.LogError(ravenClient, "Unable to run mlid", err)
 			return
 		}
 
@@ -95,7 +96,7 @@ func Check(c *gin.Context) {
 		err = result.Err()
 		if err != nil {
 			ErrorResponse(c, 420, "Unable to formulate authentication statement.")
-			utilities.LogError("Unable to get user mail", err)
+			utilities.LogError(ravenClient, "Unable to get user mail", err)
 			return
 		}
 
@@ -106,7 +107,7 @@ func Check(c *gin.Context) {
 	err = result.Err()
 	if err != nil {
 		ErrorResponse(c, 420, "Unable to formulate authentication statement.")
-		utilities.LogError("Generic database issue", err)
+		utilities.LogError(ravenClient, "Generic database issue", err)
 		return
 	}
 
@@ -119,7 +120,7 @@ func Check(c *gin.Context) {
 	if size > 0 {
 		// mailFlag needs to be not one, apparently.
 		// The Wii will refuse to check otherwise.
-		mailFlag = RandStringBytesMaskImprSrc(33) // This isn't how Nintendo did the mail flag, how they did it is currently unknown.
+		mailFlag = utilities.RandStringBytesMaskImprSrc(33) // This isn't how Nintendo did the mail flag, how they did it is currently unknown.
 	} else {
 		// mailFlag was already set to 0 above.
 	}

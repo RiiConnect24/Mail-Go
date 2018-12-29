@@ -1,10 +1,11 @@
 package main
 
 import (
-	"database/sql"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
+
+	"github.com/RiiConnect24/Mail-Go/utilities"
 )
 
 // Delete handles delete requests of mail.
@@ -13,7 +14,7 @@ func Delete(c *gin.Context) {
 	if err != nil {
 		// Welp, that went downhill fast.
 		ErrorResponse(c, 440, "Database error.")
-		utilities.LogError("Error creating delete prepared statement", err)
+		utilities.LogError(ravenClient, "Error creating delete prepared statement", err)
 		return
 	}
 
@@ -21,7 +22,7 @@ func Delete(c *gin.Context) {
 	isVerified, err := Auth(wiiID, c.PostForm("passwd"))
 	if err != nil {
 		ErrorResponse(c, 541, "Something weird happened.")
-		utilities.LogError("Error parsing delete authentication", err)
+		utilities.LogError(ravenClient, "Error parsing delete authentication", err)
 		return
 	} else if !isVerified {
 		ErrorResponse(c, 240, "An authentication error occurred.")
@@ -30,7 +31,6 @@ func Delete(c *gin.Context) {
 
 	// We don't need to check mlid as it's been verified by Auth above.
 	delnum := c.PostForm("delnum")
-
 	actualDelnum, err := strconv.Atoi(delnum)
 	if err != nil {
 		ErrorResponse(c, 340, "Invalid delete value.")
@@ -39,7 +39,7 @@ func Delete(c *gin.Context) {
 	_, err = stmt.Exec(wiiID, actualDelnum)
 
 	if err != nil {
-		utilities.LogError("Error deleting from database", err)
+		utilities.LogError(ravenClient, "Error deleting from database", err)
 		ErrorResponse(c, 220, "Issue deleting mail from the database.")
 	} else {
 		c.String(http.StatusOK,

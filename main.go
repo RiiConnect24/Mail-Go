@@ -59,7 +59,6 @@ func main() {
 
 	if global.Debug {
 		log.Println("Connecting to MySQL...")
-		gin.SetMode(gin.DebugMode)
 	}
 	db, err = sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s:%d)/%s",
 		global.Username, global.Password, global.Host, global.Port, global.DBName))
@@ -71,18 +70,24 @@ func main() {
 		panic(err)
 	}
 
+	// If we have Sentry support, go ahead and add it in.
 	if global.RavenDSN != "" {
 		ravenClient, err = raven.New(global.RavenDSN)
 		if err != nil {
 			panic(err)
 		}
 	}
-	// Mail Purging
-	c := cron.New()
-	log.Printf("Mail-Go purges Mail older than 28 days every fortnight.")
-	c.AddFunc("@every 336h", func() { purgeMail() })
 
-	router := gin.Default()
+	// Mail purging
+	gocron.Every(2).Hours().Do(func() { purgeMail() })
+	purgeMail()
+	log.Printf("Mail-GO purges Mail older than 28 days every 2 hours.")
+
+	if !global.Debug {
+		gin.SetMode(gin.ReleaseMode)
+	}
+	router := gin.New()
+	router.Use(gin.Logger(), gin.Recovery())
 
 	// Site
 	router.Use(static.Serve("/", static.LocalFile("./patch/site", false)))
@@ -104,12 +109,12 @@ func main() {
 	}
 
 	log.Println("Running...")
-
+	go gocron.Start()
 	log.Println(router.Run(fmt.Sprintf(global.BindTo)))
 }
 
 func configHandle(c *gin.Context) {
-	errorString := "It seems your file upload went awry. Contact our support email support@riiconnect24.net.\nError: %v"
+	errorString := "It seems your file upload went awry. Contact our support email at support@riiconnect24.net.\nError: %v"
 
 	fileWriter, err := c.FormFile("uploaded_config")
 	if err != nil || err == http.ErrMissingFile {

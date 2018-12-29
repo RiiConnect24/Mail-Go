@@ -1,7 +1,7 @@
-module github.com/Disconnect24/Mail-GO
+module github.com/RiiConnect24/Mail-Go
 
 require (
-	github.com/RiiConnect24/Mail-Go v0.0.0-20181209020318-2ce63b18c2ce
+	github.com/Disconnect24/Mail-GO v1.2.1
 	github.com/certifi/gocertifi v0.0.0-20180905225744-ee1a9a0726d2 // indirect
 	github.com/getsentry/raven-go v0.2.0
 	github.com/gin-contrib/sse v0.0.0-20170109093832-22d885f9ecc7 // indirect
