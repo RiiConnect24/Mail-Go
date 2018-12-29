@@ -18,3 +18,6 @@ You're welcome to `POST /patch` with a `nwc24msg.cfg` under form key `uploaded_c
 
 # What should I do if I'm adding a new dependency?
 We use Go's 1.11+ module feature. Make sure you have this enabled. For more information, see [the Go wiki](https://github.com/golang/go/wiki/Modules).
+
+# Credits
+Thanks to Disconnect24 contributors that wrote the code, currently under a forked repo.
