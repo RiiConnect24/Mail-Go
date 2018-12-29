@@ -1,7 +1,3 @@
-github.com/Disconnect24/Mail-GO v1.2.1 h1:enJQX1nEnu7NNKrqdJSUFDA15Ju/FahVKW4QwgqdPoA=
-github.com/Disconnect24/Mail-GO v1.2.1/go.mod h1:el0oA/5UR3du7wSTo8KPVxuvbbjp0YdpmrH7EXvEGqs=
-github.com/RiiConnect24/Mail-Go v0.0.0-20181209020318-2ce63b18c2ce h1:YaWTCx1qyKrK6ioxmW5FbeUHGquxp9vIfao6N6EV4Zs=
-github.com/RiiConnect24/Mail-Go v0.0.0-20181209020318-2ce63b18c2ce/go.mod h1:+nLRrZ0dtByi4h81cSFtAIpOwraIPMmgTFloZJPmFlg=
 github.com/certifi/gocertifi v0.0.0-20180905225744-ee1a9a0726d2 h1:MmeatFT1pTPSVb4nkPmBFN/LRZ97vPjsFKsZrU3KKTs=
 github.com/certifi/gocertifi v0.0.0-20180905225744-ee1a9a0726d2/go.mod h1:GJKEexRPVJrBSOjoqN5VNOIKJ5Q3RViH6eu3puDRwx4=
 github.com/getsentry/raven-go v0.2.0 h1:no+xWJRb5ZI7eE8TWgIq1jLulQiIoLG0IfYxv5JYMGs=
@@ -20,8 +16,6 @@ github.com/google/uuid v1.1.0 h1:Jf4mxPC/ziBnoPIdpQdPJ9OeiomAUHLvxmPRSPH9m4s=
 github.com/google/uuid v1.1.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
 github.com/jasonlvhit/gocron v0.0.0-20180312192515-54194c9749d4 h1:pxDHjTXOh3pcCRouZv+QBWXZAzjEMX4WYH9zueqlJmo=
 github.com/jasonlvhit/gocron v0.0.0-20180312192515-54194c9749d4/go.mod h1:rwi/esz/h+4oWLhbWWK7f6dtmgLzxeZhnwGr7MCsTNk=
-github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e h1:9MlwzLdW7QSDrhDjFlsEYmxpFyIoXmYRon3dt0io31k=
-github.com/logrusorgru/aurora v0.0.0-20181002194514-a7b3b318ed4e/go.mod h1:7rIyQOR62GCctdiQpZ/zOJlFyk6y+94wXzv6RNZgaR4=
 github.com/mattn/go-isatty v0.0.4 h1:bnP0vzxcAdeI1zdubAl5PjU6zsERjGZb7raWodagDYs=
 github.com/mattn/go-isatty v0.0.4/go.mod h1:M+lRXTBqGeGNdLjl/ufCoiOlB5xdOkqRJdNxMWT7Zi4=
 github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646 h1:zYyBkD/k9seD2A7fsi6Oo2LfFZAehjjQMERAvZLEDnQ=
