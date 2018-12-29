@@ -20,6 +20,7 @@ RUN go mod download
 # Copy necessary parts of the Mail-Go source into builder's source
 COPY *.go ./
 COPY patch patch
+COPY utilities utilities
 
 # Build to name "app".
 RUN CGO_ENABLED=0 go build -o app .
