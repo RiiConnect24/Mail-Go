@@ -22,7 +22,7 @@ package main
  		log.Printf(warning, code, reason)
  	}
  
-  	c.Render(http.StatusOK, render.String{Format: fmt.Sprintf("cd%s%d\nmsg%s%s\n", separator, code, reason, separator), Data: nil})
+	c.Render(http.StatusOK, render.String{Format: fmt.Sprintf("cd%s%d\nmsg%s%s\n", separator, code, separator, reason), Data: nil})
  }
  
   func ErrorResponse(c *gin.Context, code int, reason string) {
