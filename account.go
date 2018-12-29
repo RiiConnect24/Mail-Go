@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/sha512"
 	"encoding/hex"
+	"fmt"
 	"github.com/RiiConnect24/Mail-Go/utilities"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
