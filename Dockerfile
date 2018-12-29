@@ -25,7 +25,7 @@ COPY utilities utilities
 # Build to name "app".
 RUN CGO_ENABLED=0 go build -o app .
 
-FROM runtime-assets as runtime
+FROM alpine:3.8
 
 WORKDIR /go/src/github.com/RiiConnect24/Mail-Go/
 COPY --from=builder /go/src/github.com/RiiConnect24/Mail-Go/ .
