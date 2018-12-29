@@ -61,9 +61,9 @@ func Account(c *gin.Context) {
 		return
 	}
 
-	c.String(http.StatusOK, "cd", is, "100", "\n",
+	c.String(http.StatusOK, fmt.Sprint("cd", is, "100", "\n",
 		"msg", is, "Success.", "\n",
 		"mlid", is, wiiID, "\n",
 		"passwd", is, passwd, "\n",
-		"mlchkid", is, mlchkid, "\n")
+		"mlchkid", is, mlchkid, "\n"))
 }
