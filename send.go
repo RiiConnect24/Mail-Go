@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
@@ -17,14 +18,14 @@ var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
-func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Config) {
-	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
+func Send(c *gin.Context) {
+	c.Header("Content-Type", "text/plain;charset=utf-8")
 	// Go ahead and prepare the insert statement, for later usage.
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		// Welp, that went downhill fast.
-		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
-		LogError("Prepared send statement error", err)
+		ErrorResponse(c, 450, "Database error.")
+		utilities.LogError("Prepared send statement error", err)
 		return
 	}
 
@@ -32,31 +33,31 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	mailPart := make(map[string]string)
 
 	// Parse form in preparation for finding mail.
-	err = r.ParseMultipartForm(-1)
+	form, err := c.MultipartForm()
 	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(350, "Failed to parse mail."))
-		LogError("Failed to parse mail", err)
+		ErrorResponse(c, 350, "Failed to parse mail.")
+		utilities.LogError("Failed to parse mail", err)
 		return
 	}
 
 	// Now check if it can be verified
-	isVerified, err := Auth(r.Form)
+	isVerified, err := AuthForSend(c.PostForm("mlid"))
 	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(551, "Something weird happened."))
-		LogError("Error changing from authentication database.", err)
+		ErrorResponse(c, 666, "Something weird happened.")
+		utilities.LogError("Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(250, "An authentication error occurred."))
+		ErrorResponse(c, 240, "An authentication error occurred.")
 		return
 	}
 
-	for name, contents := range r.MultipartForm.Value {
+	for name, contents := range form.Value {
 		if mailFormName.MatchString(name) {
 			mailPart[name] = contents[0]
 		}
 	}
 
-	eventualOutput := GenSuccessResponse()
+	eventualOutput := SuccessfulResponse
 	eventualOutput += fmt.Sprint("mlnum=", len(mailPart), "\n")
 
 	// Handle all the mail! \o/
@@ -89,8 +90,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
-				if potentialMailFrom == "w9999999999990000" {
-					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999999990000 tried to send mail.")
+				if potentialMailFrom == "w9999999900000000" {
+					eventualOutput += MailErrorResponse(351, "w9999999900000000 tried to send mail.", mailNumber)
 					break
 				}
 				senderID = potentialMailFrom
@@ -123,8 +124,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue iterating over strings.")
-			LogError("Error reading from scanner", err)
+			eventualOutput += MailErrorResponse(551, "Issue iterating over strings.", mailNumber)
+			utilities.LogError("Error reading from scanner", err)
 			return
 		}
 		mailContents := strings.Replace(data, linesToRemove, "", -1)
@@ -142,8 +143,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
-				eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
-				LogError("Error inserting mail", err)
+				eventualOutput += MailErrorResponse(450, "Database error.", mailNumber)
+				utilities.LogError("Error inserting mail", err)
 				return
 			}
 		}
@@ -151,16 +152,16 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 		for _, pcRecipient := range pcRecipientIDs {
 			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
-				LogError("Error sending mail via SendGrid", err)
-				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue sending mail via SendGrid.")
+				utilities.LogError("Error sending mail via SendGrid", err)
+				eventualOutput += MailErrorResponse(551, "Issue sending mail via SMTP.", mailNumber)
 				return
 			}
 		}
-		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
+		eventualOutput += MailErrorResponse(100, "Success.", mailNumber)
 	}
 
 	// We're completely done now.
-	fmt.Fprint(w, eventualOutput)
+	c.String(http.StatusOK, eventualOutput)
 }
 
 func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {

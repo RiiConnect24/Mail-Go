@@ -92,7 +92,7 @@ func GenerateBoundary() string {
 	return fmt.Sprint(time.Now().Format("200601021504"), "/", random(1000000, 9999999))
 }
 
-func LogError(reason string, err error) {
+func LogError(ravenClient *raven.Client, reason string, err error) {
 	// Adapted from
 	// https://stackoverflow.com/a/38551362
 	pc, _, _, ok := runtime.Caller(1)

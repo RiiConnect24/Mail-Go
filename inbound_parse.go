@@ -1,7 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"github.com/RiiConnect24/Mail-Go/utilities"
+	"github.com/gin-gonic/gin"
 	"io/ioutil"
 
 	"log"
@@ -14,20 +15,11 @@ import (
 
 var mailDomain *regexp.Regexp
 
-func sendGridHandler(w http.ResponseWriter, r *http.Request) {
-	// We sincerely hope someone won't attempt to send more than a 11MB image.
-	// but, if they do, now they have 10mb for image and 1mb for text + etc
-	// (still probably too much)
-	err := r.ParseMultipartForm(-1)
-	if err != nil {
-		log.Printf("Unable to parse form: %v", err)
-		return
-	}
-
-	text := r.Form.Get("text")
+func sendGridHandler(c *gin.Context) {
+	text := c.PostForm("text")
 
 	// TODO: Properly verify attachments.
-	if r.Form.Get("from") == "" || r.Form.Get("to") == "" {
+	if c.PostForm("from") == "" || c.PostForm("to") == "" {
 		// something was nil
 		log.Println("Something happened to SendGrid... is someone else accessing?")
 		return
@@ -39,13 +31,13 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Figure out who sent it.
-	fromAddress, err := mail.ParseAddress(r.Form.Get("from"))
+	fromAddress, err := mail.ParseAddress(c.PostForm("from"))
 	if err != nil {
 		log.Printf("given from address is invalid: %v", err)
 		return
 	}
 
-	toAddress := r.Form.Get("to")
+	toAddress := c.PostForm("to")
 	// Validate who's being mailed.
 	potentialMailInformation := mailDomain.FindStringSubmatch(toAddress)
 	if potentialMailInformation == nil || potentialMailInformation[2] != global.SendGridDomain {
@@ -58,21 +50,28 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	// We "create" a response for the Wii to use, based off attachments and multipart components.
 	// TODO: potentially handle all attachments until first image type?
 	var attachedFile []byte
-	attachment, _, err := r.FormFile("attachment1")
+	attachment, err := c.FormFile("attachment1")
 	if err == http.ErrMissingFile {
 		// We don't care if there's nothing, it'll just stay nil.
 	} else if err != nil {
-		log.Printf("failed to read attachment from form: %v", err)
+		utilities.LogError(ravenClient, "Failed to read attachment from form.", err)
+		c.Status(http.StatusInternalServerError)
 		return
 	} else {
-		attachedFile, err = ioutil.ReadAll(attachment)
+		file, err := attachment.Open()
 		if err != nil {
-			log.Printf("failed to read attachment from form: %v", err)
+			utilities.LogError(ravenClient, "Failed to open attachment from form.", err)
+			c.Status(http.StatusInternalServerError)
+		}
+		attachedFile, err = ioutil.ReadAll(file)
+		if err != nil {
+			utilities.LogError(ravenClient, "Failed to read attachment from form.", err)
+			c.Status(http.StatusInternalServerError)
 			return
 		}
 	}
 
-	wiiMail, err := FormulateMail(fromAddress.Address, toAddress, r.Form.Get("subject"), text, attachedFile)
+	wiiMail, err := FormulateMail(fromAddress.Address, toAddress, c.PostForm("subject"), text, attachedFile)
 	if err != nil {
 		log.Printf("error formulating mail: %v", err)
 		return
@@ -84,16 +83,16 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Printf("Database error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
 	_, err = stmt.Exec(fromAddress.Address, wiiMail, recipientMlid, uuid.New().String(), uuid.New().String())
 	if err != nil {
 		log.Printf("Database error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		c.Status(http.StatusInternalServerError)
 		return
 	}
 
-	fmt.Fprint(w, "thanks sendgrid")
+	c.String(http.StatusOK, "thanks sendgrid")
 }
