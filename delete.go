@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
@@ -43,7 +44,7 @@ func Delete(c *gin.Context) {
 		ErrorResponse(c, 220, "Issue deleting mail from the database.")
 	} else {
 		c.String(http.StatusOK,
-			SuccessfulResponse+
-				"deletenum=", delnum)
+			fmt.Sprint(SuccessfulResponse,
+				"deletenum=", delnum))
 	}
 }
