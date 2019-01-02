@@ -43,7 +43,7 @@ func Send(c *gin.Context) {
 	// Now check if it can be verified
 	isVerified, err := AuthForSend(c.PostForm("mlid"))
 	if err != nil {
-		ErrorResponse(c, 666, "Something weird happened.")
+		ErrorResponse(c, 551, "Something weird happened.")
 		utilities.LogError(ravenClient, "Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
