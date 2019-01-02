@@ -9,7 +9,6 @@ ENV GO111MODULE=on
 ENV DOCKERIZE_VERSION v0.6.1
 RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-alpine-linux-amd64-$DOCKERIZE_VERSION.tar.gz -O /tmp/dockerize.tar.gz \
     && tar -C /usr/local/bin -xzvf /tmp/dockerize.tar.gz && rm /tmp/dockerize.tar.gz
-RUN apk add -U --no-cache ca-certificates
 
 FROM builder-assets as builder
 WORKDIR /go/src/github.com/RiiConnect24/Mail-Go
@@ -26,6 +25,8 @@ COPY utilities utilities
 RUN CGO_ENABLED=0 go build -o app .
 
 FROM alpine:3.8
+
+RUN apk add -U --no-cache ca-certificates
 
 WORKDIR /go/src/github.com/RiiConnect24/Mail-Go/
 COPY --from=builder /go/src/github.com/RiiConnect24/Mail-Go/ .
