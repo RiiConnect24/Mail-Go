@@ -1,48 +1,54 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"github.com/gin-gonic/gin"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/RiiConnect24/Mail-Go/utilities"
+	"time"
 )
 
 // Receive loops through stored mail and formulates a response.
 // Then, if applicable, marks the mail as received.
-func Receive(c *gin.Context) {
-	mlidWithW := c.PostForm("mlid")
-	isVerified, err := Auth(mlidWithW, c.PostForm("passwd"))
+func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	// Parse form.
+	err := r.ParseForm()
 	if err != nil {
-		ErrorResponse(c, 531, "Something weird happened.")
+		LogError("Error parsing form", err)
+		return
+	}
 
-		utilities.LogError(ravenClient, "Error receiving.", err)
+	isVerified, err := Auth(r.Form)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(531, "Something weird happened."))
+		LogError("Error receiving.", err)
 		return
 	} else if !isVerified {
-		ErrorResponse(c, 230, "An authentication error occurred.")
+		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
 		return
 	}
 
 	// We already know the mlid is valid from previous
 	// so we don't need to further check.
+	mlidWithW := r.Form.Get("mlid")
 	mlid := mlidWithW[1:]
 
-	maxsize, err := strconv.Atoi(c.PostForm("maxsize"))
+	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
-		ErrorResponse(c, 330, "maxsize needs to be an int.")
+		fmt.Fprint(w, GenNormalErrorCode(330, "maxsize needs to be an int."))
 		return
 	}
 
 	stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
 	if err != nil {
-		utilities.LogError(ravenClient, "Error preparing statement", err)
+		LogError("Error preparing statement", err)
 		return
 	}
 	storedMail, err := stmt.Query(mlid)
 	if err != nil {
-		utilities.LogError(ravenClient, "Error running query against mlid", err)
+		LogError("Error running query against mlid", err)
 		return
 	}
 
@@ -53,13 +59,13 @@ func Receive(c *gin.Context) {
 	// Statement to mark as sent once put in mail output
 	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
 	if err != nil {
-		utilities.LogError(ravenClient, "Error preparing sent statement", err)
+		LogError("Error preparing sent statement", err)
 		return
 	}
 
 	// Loop through mail and make the output.
-	wc24MimeBoundary := utilities.GenerateBoundary()
-	c.Header("Content-Type", fmt.Sprint("multipart/mixed; boundary=", wc24MimeBoundary))
+	wc24MimeBoundary := GenerateBoundary()
+	w.Header().Add("Content-Type", fmt.Sprint("multipart/mixed; boundary=", wc24MimeBoundary))
 
 	defer storedMail.Close()
 	for storedMail.Next() {
@@ -101,7 +107,7 @@ func Receive(c *gin.Context) {
 			// We're committed at this point. Mark it that way in the db.
 			_, err := updateMailState.Exec(mailId)
 			if err != nil {
-				utilities.LogError(ravenClient, "Unable to mark mail as sent", err)
+				LogError("Unable to mark mail as sent", err)
 			}
 		}
 	}
@@ -109,17 +115,22 @@ func Receive(c *gin.Context) {
 	// Make sure nothing failed.
 	err = storedMail.Err()
 	if err != nil {
-		utilities.LogError(ravenClient, "General database error", err)
+		LogError("General database error", err)
 	}
 
 	request := fmt.Sprint("--", wc24MimeBoundary, "\r\n",
 		"Content-Type: text/plain\r\n\r\n",
 		"This part is ignored.\r\n\r\n\r\n\n",
-		SuccessfulResponse,
+		GenSuccessResponse(),
 		"mailnum=", amountOfMail, "\n",
 		"mailsize=", mailSize, "\n",
 		"allnum=", amountOfMail, "\n",
 		totalMailOutput,
 		"\r\n--", wc24MimeBoundary, "--\r\n")
-	c.String(http.StatusOK, request)
+	fmt.Fprint(w, request)
+}
+
+func random(min, max int) int {
+	rand.Seed(time.Now().Unix())
+	return rand.Intn(max-min) + min
 }

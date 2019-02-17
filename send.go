@@ -2,15 +2,14 @@ package main
 
 import (
 	"bufio"
+	"database/sql"
 	"fmt"
-	"github.com/gin-gonic/gin"
+	"github.com/RiiConnect24/Mail-Go/patch"
+	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
 	"regexp"
 	"strings"
-
-	"github.com/RiiConnect24/Mail-Go/utilities"
-	"github.com/google/uuid"
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
@@ -18,14 +17,14 @@ var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
-func Send(c *gin.Context) {
-	c.Header("Content-Type", "text/plain;charset=utf-8")
+func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Config) {
+	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 	// Go ahead and prepare the insert statement, for later usage.
 	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
 	if err != nil {
 		// Welp, that went downhill fast.
-		ErrorResponse(c, 450, "Database error.")
-		utilities.LogError(ravenClient, "Prepared send statement error", err)
+		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
+		LogError("Prepared send statement error", err)
 		return
 	}
 
@@ -33,64 +32,69 @@ func Send(c *gin.Context) {
 	mailPart := make(map[string]string)
 
 	// Parse form in preparation for finding mail.
-	form, err := c.MultipartForm()
+	err = r.ParseMultipartForm(-1)
 	if err != nil {
-		ErrorResponse(c, 350, "Failed to parse mail.")
-		utilities.LogError(ravenClient, "Failed to parse mail", err)
+		fmt.Fprint(w, GenNormalErrorCode(350, "Failed to parse mail."))
+		LogError("Failed to parse mail", err)
 		return
 	}
 
 	// Now check if it can be verified
-	isVerified, err := AuthForSend(c.PostForm("mlid"))
+	isVerified, err := Auth(r.Form)
 	if err != nil {
-		ErrorResponse(c, 551, "Something weird happened.")
-		utilities.LogError(ravenClient, "Error changing from authentication database.", err)
+		fmt.Fprintf(w, GenNormalErrorCode(551, "Something weird happened."))
+		LogError("Error changing from authentication database.", err)
 		return
 	} else if !isVerified {
-		ErrorResponse(c, 240, "An authentication error occurred.")
+		fmt.Fprintf(w, GenNormalErrorCode(250, "An authentication error occurred."))
 		return
 	}
 
-	for name, contents := range form.Value {
+	for name, contents := range r.MultipartForm.Value {
 		if mailFormName.MatchString(name) {
 			mailPart[name] = contents[0]
 		}
 	}
 
-	eventualOutput := SuccessfulResponse
+	eventualOutput := GenSuccessResponse()
 	eventualOutput += fmt.Sprint("mlnum=", len(mailPart), "\n")
 
 	// Handle all the mail! \o/
 	for mailNumber, contents := range mailPart {
+		var linesToRemove string
+		// I'm making this a string for similar reasons as below.
+		// Plus it beats repeated `strconv.Itoa`s
 		var wiiRecipientIDs []string
 		var pcRecipientIDs []string
-		// senderID must be a string.
+		// Yes, senderID is a string. >.<
 		// The database contains `w<16 digit ID>` due to previous PHP scripts.
 		// POTENTIAL TODO: remove w from database?
 		var senderID string
-		var mailContents string
+		var data string
 
 		// For every new line, handle as needed.
 		scanner := bufio.NewScanner(strings.NewReader(contents))
 		for scanner.Scan() {
 			line := scanner.Text()
+			// Add it to this mail's overall data.
+			data += fmt.Sprintln(line)
 
 			if line == "DATA" {
-				// This line just tells the server beyond here to stop processing
-				// We shouldn't send that to the client, so we're done.
-				break
+				// We don't actually need to do anything here,
+				// just carry on.
+				linesToRemove += fmt.Sprintln(line)
+				continue
 			}
 
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
-				// "Special" number from Nintendo, used to send to allusers@wii.com.
-				// While not necessarily hardcoded anywhere, no need to confuse.
-				if potentialMailFrom == "w9999999900000000" {
-					eventualOutput += MailErrorResponse(351, "w9999999900000000 tried to send mail.", mailNumber)
-					return
+				if potentialMailFrom == "w9999999999990000" {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999999990000 tried to send mail.")
+					break
 				}
 				senderID = potentialMailFrom
+				linesToRemove += fmt.Sprintln(line)
 				continue
 			}
 
@@ -101,31 +105,31 @@ func Send(c *gin.Context) {
 				potentialRecipient := potentialRecipientWrapper[0]
 
 				// layout:
+				// potentialRecipient[0] = original matched string w/o groups
 				// potentialRecipient[1] = w<16 digit ID>
 				// potentialRecipient[2] = domain being sent to
 				if potentialRecipient[2] == "wii.com" {
 					// We're not gonna allow you to send to a defunct domain. ;P
-				} else if potentialRecipient[2] == global.SendGridDomain {
+				} else if potentialRecipient[2] == config.SendGridDomain {
 					// Wii <-> Wii mail. We can handle this.
 					wiiRecipientIDs = append(wiiRecipientIDs, potentialRecipient[1])
 				} else {
-					// PC <-> Wii mail. An actual mail server will handle this.
+					// PC <-> Wii mail. We can't handle this, but SendGrid can.
 					email := fmt.Sprintf("%s@%s", potentialRecipient[1], potentialRecipient[2])
 					pcRecipientIDs = append(pcRecipientIDs, email)
 				}
+
+				linesToRemove += fmt.Sprintln(line)
 			}
-
-			// This line doesn't need to be processed and can be added.
-			mailContents += line
 		}
-
 		if err := scanner.Err(); err != nil {
-			eventualOutput += MailErrorResponse(551, "Issue iterating over strings.", mailNumber)
-			utilities.LogError(ravenClient, "Error reading from scanner", err)
+			eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue iterating over strings.")
+			LogError("Error reading from scanner", err)
 			return
 		}
-
-		// Replace all @wii.com references in the friend request email with our own domain.
+		mailContents := strings.Replace(data, linesToRemove, "", -1)
+		// Replace all @wii.com references in the
+		// friend request email with our own domain.
 		// Format: w9004342343324713@wii.com <mailto:w9004342343324713@wii.com>
 		mailContents = strings.Replace(mailContents,
 			fmt.Sprintf("%s@wii.com <mailto:%s@wii.com>", senderID, senderID),
@@ -138,34 +142,34 @@ func Send(c *gin.Context) {
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
-				eventualOutput += MailErrorResponse(450, "Database error.", mailNumber)
-				utilities.LogError(ravenClient, "Error inserting mail", err)
+				eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
+				LogError("Error inserting mail", err)
 				return
 			}
 		}
 
 		for _, pcRecipient := range pcRecipientIDs {
-			err := handlePCmail(senderID, pcRecipient, mailContents)
+			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
-				utilities.LogError(ravenClient, "Error sending mail via SMTP", err)
-				eventualOutput += MailErrorResponse(551, "Issue sending mail via SMTP.", mailNumber)
+				LogError("Error sending mail via SendGrid", err)
+				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue sending mail via SendGrid.")
 				return
 			}
 		}
-		eventualOutput += MailErrorResponse(100, "Success.", mailNumber)
+		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
 	}
 
 	// We're completely done now.
-	c.String(http.StatusOK, eventualOutput)
+	fmt.Fprint(w, eventualOutput)
 }
 
-func handlePCmail(senderID string, pcRecipient string, mailContents string) error {
+func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {
 	// Connect to the remote SMTP server.
 	host := "smtp.sendgrid.net"
 	auth := smtp.PlainAuth(
 		"",
 		"apikey",
-		global.SendGridKey,
+		config.SendGridKey,
 		host,
 	)
 	// The only reason we can get away with the following is
@@ -173,7 +177,7 @@ func handlePCmail(senderID string, pcRecipient string, mailContents string) erro
 	return smtp.SendMail(
 		fmt.Sprint(host, ":587"),
 		auth,
-		fmt.Sprintf("%s@%s", senderID, global.SendGridDomain),
+		fmt.Sprintf("%s@%s", senderID, config.SendGridDomain),
 		[]string{pcRecipient},
 		[]byte(mailContents),
 	)

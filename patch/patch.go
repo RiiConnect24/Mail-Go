@@ -1,22 +1,20 @@
 package patch
 
 import (
-	"bytes"
-	"crypto/sha512"
-	"database/sql"
-	"encoding/binary"
-	"encoding/hex"
 	"errors"
-	"fmt"
+	"encoding/binary"
+	"bytes"
 	"io/ioutil"
-
-	"github.com/RiiConnect24/Mail-Go/utilities"
+	"database/sql"
+	"crypto/sha512"
+	"encoding/hex"
+	"fmt"
 	"github.com/getsentry/raven-go"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
-func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global utilities.Config, ravenClient *raven.Client, salt []byte) ([]byte, error) {
+func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClient *raven.Client, salt []byte) ([]byte, error) {
 	if len(originalConfig) == 0 {
 		return nil, errors.New("config seems to be empty. double check you uploaded a file")
 	}
@@ -25,14 +23,14 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global utilities.Config,
 		return nil, errors.New("invalid config size")
 	}
 
-	var config utilities.ConfigFormat
+	var config ConfigFormat
 	configReadingBuf := bytes.NewBuffer(originalConfig)
 	err := binary.Read(configReadingBuf, binary.BigEndian, &config)
 	if err != nil {
 		return nil, err
 	}
 
-	if bytes.Compare(config.Magic[:], utilities.ConfigMagic) != 0 {
+	if bytes.Compare(config.Magic[:], ConfigMagic) != 0 {
 		return nil, errors.New("invalid magic")
 	}
 
@@ -40,29 +38,29 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global utilities.Config,
 	mlid := fmt.Sprintf("w%016d", config.FriendCode)
 
 	// Go ahead and push generated data.
-	mlchkid := utilities.RandStringBytesMaskImprSrc(32)
+	mlchkid := RandStringBytesMaskImprSrc(32)
 	mlchkidByte := sha512.Sum512(append(salt, []byte(mlchkid)...))
 	mlchkidHash := hex.EncodeToString(mlchkidByte[:])
 
-	passwd := utilities.RandStringBytesMaskImprSrc(16)
+	passwd := RandStringBytesMaskImprSrc(16)
 	passwdByte := sha512.Sum512(append(salt, []byte(passwd)...))
 	passwdHash := hex.EncodeToString(passwdByte[:])
 
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
-		utilities.LogError(ravenClient, "Error preparing account statement", err)
+		LogError(ravenClient, "Error preparing account statement", err)
 		return nil, err
 	}
 
 	_, err = stmt.Exec(mlid, mlchkidHash, passwdHash)
 	if err != nil {
-		utilities.LogError(ravenClient, "Error running account statement", err)
+		LogError(ravenClient, "Error running account statement", err)
 		return nil, err
 	}
 
 	// Alright, now it's time to patch.
 	var newMailDomain [64]byte
-	copy(newMailDomain[:], []byte("@"+global.SendGridDomain))
+	copy(newMailDomain[:], []byte("@" + global.SendGridDomain))
 	config.MailDomain = newMailDomain
 
 	// Copy changed credentials

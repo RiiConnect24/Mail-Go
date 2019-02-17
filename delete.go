@@ -1,50 +1,48 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-
-	"github.com/RiiConnect24/Mail-Go/utilities"
 )
 
 // Delete handles delete requests of mail.
-func Delete(c *gin.Context) {
+func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	stmt, err := db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ? ORDER BY `timestamp` ASC LIMIT ?")
 	if err != nil {
 		// Welp, that went downhill fast.
-		ErrorResponse(c, 440, "Database error.")
-		utilities.LogError(ravenClient, "Error creating delete prepared statement", err)
+		fmt.Fprint(w, GenNormalErrorCode(440, "Database error."))
+		LogError("Error creating delete prepared statement", err)
 		return
 	}
 
-	wiiID := c.PostForm("mlid")
-	isVerified, err := Auth(wiiID, c.PostForm("passwd"))
+	isVerified, err := Auth(r.Form)
 	if err != nil {
-		ErrorResponse(c, 541, "Something weird happened.")
-		utilities.LogError(ravenClient, "Error parsing delete authentication", err)
+		fmt.Fprintf(w, GenNormalErrorCode(541, "Something weird happened."))
+		LogError("Error parsing delete authentication", err)
 		return
 	} else if !isVerified {
-		ErrorResponse(c, 240, "An authentication error occurred.")
+		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
 
 	// We don't need to check mlid as it's been verified by Auth above.
-	delnum := c.PostForm("delnum")
+	wiiID := r.Form.Get("mlid")
+
+	delnum := r.Form.Get("delnum")
 	actualDelnum, err := strconv.Atoi(delnum)
 	if err != nil {
-		ErrorResponse(c, 340, "Invalid delete value.")
+		fmt.Fprintf(w, GenNormalErrorCode(340, "Invalid delete value."))
 		return
 	}
 	_, err = stmt.Exec(wiiID, actualDelnum)
 
 	if err != nil {
-		utilities.LogError(ravenClient, "Error deleting from database", err)
-		ErrorResponse(c, 220, "Issue deleting mail from the database.")
+		LogError("Error deleting from database", err)
+		fmt.Fprint(w, GenNormalErrorCode(541, "Issue deleting mail from the database."))
 	} else {
-		c.String(http.StatusOK,
-			fmt.Sprint(SuccessfulResponse,
-				"deletenum=", delnum))
+		fmt.Fprint(w, GenSuccessResponse(),
+			"deletenum=", delnum)
 	}
 }
