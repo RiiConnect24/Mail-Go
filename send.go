@@ -138,7 +138,12 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 
 		// We're done figuring out the mail, now it's time to act as needed.
 		// For Wii recipients, we can just insert into the database.
+		i := 0
 		for _, wiiRecipient := range wiiRecipientIDs {
+			if i > 10 {
+				continue
+			}
+			
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
@@ -146,15 +151,24 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				LogError("Error inserting mail", err)
 				return
 			}
+			
+			i += 1
 		}
 
+		i = 0
 		for _, pcRecipient := range pcRecipientIDs {
+			if i > 10 {
+				continue
+			}
+			
 			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
 				LogError("Error sending mail via SendGrid", err)
 				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue sending mail via SendGrid.")
 				return
 			}
+			
+			i += 1
 		}
 		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
 	}
