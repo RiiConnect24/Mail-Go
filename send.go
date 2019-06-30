@@ -89,8 +89,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
-				if potentialMailFrom == "w9999999999990000" {
-					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999999990000 tried to send mail.")
+				if potentialMailFrom == "w9999999900000000" {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
 					break
 				}
 				senderID = potentialMailFrom
