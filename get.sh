@@ -5,6 +5,7 @@ go get -v github.com/logrusorgru/aurora
 go get -v github.com/go-sql-driver/mysql
 go get -v github.com/getsentry/raven-go
 go get -v github.com/robfig/cron
+go get -v github.com/DataDog/datadog-go/statsd
 
 # Used for image processing in regards to e-mail
 go get -v github.com/nfnt/resize

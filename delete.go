@@ -38,6 +38,17 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 	_, err = stmt.Exec(wiiID, actualDelnum)
 
+	if global.Datadog {
+		s, err := strconv.ParseFloat(delnum, 64)
+		if err != nil {
+			panic(err)
+		}
+		err = dataDogClient.Incr("mail.deleted_mail", nil, s)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	if err != nil {
 		LogError("Error deleting from database", err)
 		fmt.Fprint(w, GenNormalErrorCode(541, "Issue deleting mail from the database."))

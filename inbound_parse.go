@@ -95,5 +95,12 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if global.Datadog {
+		err := dataDogClient.Incr("mail.received_mail_sendgrid", nil, 1)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	fmt.Fprint(w, "thanks sendgrid")
 }

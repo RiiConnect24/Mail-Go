@@ -10,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/getsentry/raven-go"
+	"github.com/DataDog/datadog-go/statsd"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
@@ -56,6 +57,18 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClie
 	if err != nil {
 		LogError(ravenClient, "Error running account statement", err)
 		return nil, err
+	}
+
+	if global.Datadog  {
+		dataDogClient, err := statsd.New("127.0.0.1:8125")
+		if err != nil {
+			panic(err)
+		}
+
+		err = dataDogClient.Incr("mail.accounts_registered", nil, 1)
+		if err != nil {
+			panic(err)
+		}
 	}
 
 	// Alright, now it's time to patch.

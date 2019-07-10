@@ -173,6 +173,13 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
 	}
 
+	if global.Datadog {
+		err := dataDogClient.Incr("mail.sent_mail", nil, float64(len(mailPart)))
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	// We're completely done now.
 	fmt.Fprint(w, eventualOutput)
 }

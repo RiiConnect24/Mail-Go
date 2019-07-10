@@ -63,6 +63,13 @@ func Account(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if global.Datadog  {
+		err = dataDogClient.Incr("mail.accounts_registered", nil, 1)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	fmt.Fprint(w, GenSuccessResponseTyped(is),
 		"mlid", is, wiiID, "\n",
 		"passwd", is, passwd, "\n",

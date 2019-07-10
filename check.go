@@ -130,6 +130,13 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		// mailFlag was already set to 0 above.
 	}
 
+	if global.Datadog {
+		err := dataDogClient.Incr("mail.checked", nil, 1)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	// https://github.com/RiiConnect24/Mail-Go/wiki/check.cgi for response format
 	fmt.Fprint(w, GenSuccessResponse(),
 		"res=", res, "\n",
