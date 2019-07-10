@@ -14,12 +14,14 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"github.com/DataDog/datadog-go/statsd"
 )
 
 var global patch.Config
 var db *sql.DB
 var salt []byte
 var ravenClient *raven.Client
+var dataDogClient *statsd.Client
 
 func logRequest(handler http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -141,6 +143,13 @@ func main() {
 
 	if global.RavenDSN != "" {
 		ravenClient, err = raven.New(global.RavenDSN)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	if global.Datadog  {
+		dataDogClient, err = statsd.New("127.0.0.1:8125")
 		if err != nil {
 			panic(err)
 		}

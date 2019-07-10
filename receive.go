@@ -118,6 +118,13 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		LogError("General database error", err)
 	}
 
+	if global.Datadog {
+		err := dataDogClient.Incr("mail.received_mail", nil, float64(amountOfMail))
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	request := fmt.Sprint("--", wc24MimeBoundary, "\r\n",
 		"Content-Type: text/plain\r\n\r\n",
 		"This part is ignored.\r\n\r\n\r\n\n",
