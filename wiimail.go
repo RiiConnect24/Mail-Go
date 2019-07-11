@@ -121,7 +121,8 @@ func genError(mailContent string, body string, boundary string) string {
 		"---",
 		CRLF,
 		"An error occurred processing the attached image.", CRLF,
-		"For more information, ask the sender to forward this mail to support@riiconnect24.net.",
+		"For more information, ask the sender to forward this mail to ",
+		global.SupportEmail,
 		strings.Repeat(CRLF, 3),
 		"--", boundary, "--")
 }

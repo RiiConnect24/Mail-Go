@@ -36,4 +36,5 @@ type Config struct {
 	PatchBaseDomain string
 	RavenDSN        string
 	Datadog        bool
+	SupportEmail	string
 }

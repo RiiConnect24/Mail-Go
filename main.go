@@ -66,7 +66,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		if err != nil || err == http.ErrMissingFile {
 			LogError("Incorrect file", err)
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
+			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email: %s\nError: %v", global.SupportEmail, err)
 			return
 		}
 
@@ -74,7 +74,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			LogError("Unable to read file", err)
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email support@riiconnect24.net.\nError: %v", err)
+			fmt.Fprintf(w, "It seems your file upload went awry. Contact our support email: %s\nError: %v", global.SupportEmail, err)
 			return
 		}
 
@@ -82,7 +82,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			LogError("Unable to patch", err)
 			w.WriteHeader(http.StatusBadRequest)
-			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email: support@riiconnect24.net.\nError: %v", err)
+			fmt.Fprintf(w, "It seems your patching went awry. Contact our support email: %s\nError: %v", global.SupportEmail, err)
 			return
 		}
 		w.Header().Add("Content-Type", "application/octet-stream")
