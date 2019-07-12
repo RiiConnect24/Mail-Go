@@ -25,6 +25,9 @@ func Account(w http.ResponseWriter, r *http.Request) {
 	if !friendCodeIsValid(wiiID) {
 		fmt.Fprint(w, GenAccountErrorCode(610, is, "Invalid Wii Friend Code."))
 		return
+	} else if wiiID == "" {
+		fmt.Fprintf(w, GenNormalErrorCode(310, "Unable to parse parameters."))
+		return
 	}
 
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")

@@ -118,7 +118,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 
 	if resultsLoop == 0 {
 		// Looks like that user didn't exist.
-		fmt.Fprintf(w, GenNormalErrorCode(220, "Invalid authentication."))
+		fmt.Fprintf(w, GenNormalErrorCode(321, "User not found."))
 		return
 	}
 

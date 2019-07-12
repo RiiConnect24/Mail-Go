@@ -16,7 +16,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// Parse form.
 	err := r.ParseForm()
 	if err != nil {
-		LogError("Error parsing form", err)
+		fmt.Fprint(w, GenNormalErrorCode(330, "Unable to parse parameters."))
+		LogError("Unable to parse form", err)
 		return
 	}
 
@@ -33,6 +34,12 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// We already know the mlid is valid from previous
 	// so we don't need to further check.
 	mlidWithW := r.Form.Get("mlid")
+
+	if mlidWithW == "" {
+		fmt.Fprintf(w, GenNormalErrorCode(330, "Unable to parse parameters."))
+		return
+	}
+
 	mlid := mlidWithW[1:]
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
