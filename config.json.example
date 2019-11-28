@@ -1,0 +1,15 @@
+{
+  "Port": 3306,
+  "Host": "0.0.0.0",
+  "Username": "redacted",
+  "Password": "redacted",
+  "DBName": "WC24Mail",
+  "Interval": 10,
+  "BindTo": "localhost:8080",
+  "SendGridKey": "redacted",
+  "SendGridDomain": "rc24.xyz",
+  "Debug": false,
+  "PatchBaseDomain": "http://mtw.rc24.xyz",
+  "RavenDSN": "redacted",
+  "Datadog": true
+}
