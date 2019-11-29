@@ -72,6 +72,9 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	// Scan through returned rows.
 	defer result.Close()
 	for result.Next() {
+		var mlid string
+		err = result.Scan(&mlid)
+		
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {
