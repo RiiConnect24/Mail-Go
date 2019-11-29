@@ -72,21 +72,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		var mlid string
 		err = result.Scan(&mlid)
 
-                key, err := hex.DecodeString("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
-                if err != nil {
-                        LogError("Unable to decode key", err)
-                }
-
-		chlng, err := hex.DecodeString(r.Form.Get("chlng"))
-		if err != nil {
-			LogError("Unable to decode chlng string", err)
-		}
-
-		h := hmac.New(sha1.New, []byte(key))
-		h.Write([]byte(mlid))
-		h.Write([]byte(chlng))
-		res = hex.EncodeToString(h.Sum(nil))
-
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {
@@ -109,6 +94,35 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		resultsLoop++
 	}
 
+	if size > 0 {
+		// mailFlag needs to be not one, apparently.
+		// The Wii will refuse to check otherwise.
+		mailFlag = RandStringBytesMaskImprSrc(33) // This isn't how Nintendo did the mail flag, how they did it is currently unknown.
+	} else {
+		// mailFlag was already set to 0 above.
+	}
+
+	key, err := hex.DecodeString("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
+	if err != nil {
+		LogError("Unable to decode key", err)
+	}
+
+	chlng, err := r.Form.Get("chlng")
+	if chlng == "" {
+		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
+		return
+	}
+
+	h := hmac.New(sha1.New, []byte(key))
+	h.Write(chlng)
+	h.Write("\n")
+	h.Write(mlid)
+	h.Write("\n")
+	h.Write(mailFlag)
+	h.Write("\n")
+	h.Write(interval)
+	res = hex.EncodeToString(h.Sum(nil))
+
 	err = result.Err()
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
@@ -120,14 +134,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		// Looks like that user didn't exist.
 		fmt.Fprintf(w, GenNormalErrorCode(321, "User not found."))
 		return
-	}
-
-	if size > 0 {
-		// mailFlag needs to be not one, apparently.
-		// The Wii will refuse to check otherwise.
-		mailFlag = RandStringBytesMaskImprSrc(33) // This isn't how Nintendo did the mail flag, how they did it is currently unknown.
-	} else {
-		// mailFlag was already set to 0 above.
 	}
 
 	if global.Datadog {
