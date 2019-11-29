@@ -65,13 +65,13 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	mailFlag := "000000000000000000000000000000000"
 	resultsLoop := 0
 	size := 0
+	
+	var mlid string
+	err = result.Scan(&mlid)
 
 	// Scan through returned rows.
 	defer result.Close()
 	for result.Next() {
-		var mlid string
-		err = result.Scan(&mlid)
-
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {
@@ -107,20 +107,20 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		LogError("Unable to decode key", err)
 	}
 
-	chlng, err := r.Form.Get("chlng")
+	chlng := r.Form.Get("chlng")
 	if chlng == "" {
 		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		return
 	}
 
 	h := hmac.New(sha1.New, []byte(key))
-	h.Write(chlng)
-	h.Write("\n")
-	h.Write(mlid)
-	h.Write("\n")
-	h.Write(mailFlag)
-	h.Write("\n")
-	h.Write(interval)
+	h.Write([]byte(chlng))
+	h.Write([]byte("\n"))
+	h.Write([]byte(mlid))
+	h.Write([]byte("\n"))
+	h.Write([]byte(mailFlag))
+	h.Write([]byte("\n"))
+	h.Write([]byte(interval))
 	res = hex.EncodeToString(h.Sum(nil))
 
 	err = result.Err()
