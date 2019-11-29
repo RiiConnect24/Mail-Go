@@ -67,12 +67,10 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	size := 0
 	
 	var mlid string
-	err = result.Scan(&mlid)
 
 	// Scan through returned rows.
 	defer result.Close()
 	for result.Next() {
-		var mlid string
 		err = result.Scan(&mlid)
 		
 		// Splice off w from mlid
