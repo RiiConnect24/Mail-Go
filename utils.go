@@ -90,11 +90,9 @@ func friendCodeIsValid(wiiID string) bool {
 	wiiIDNumber, err := strconv.Atoi(wiiID[1:])
 	if err != nil {
 		return false
-	} else {
-		wiiIDNumber = uint64(wiiIDNumber)
 	}
 
-	var wiiIDValid bool = wiino.NWC24CheckUserID(wiiIDNumber) == uint8(0)
+	var wiiIDValid bool = wiino.NWC24CheckUserID(uint64(wiiIDNumber)) == uint8(0)
 
 	return matchstring && wiiIDValid
 }
