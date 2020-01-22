@@ -87,9 +87,11 @@ func GenSuccessResponseTyped(divider string) string {
 func friendCodeIsValid(wiiID string) bool {
 	var matchstring bool = mailRegex.MatchString(wiiID)
 
-	wiiIDNumber, err := uint64(strconv.Atoi(wiiID[1:]))
+	wiiIDNumber, err := strconv.Atoi(wiiID[1:])
 	if err != nil {
 		return false
+	} else {
+		wiiIDNumber = uint64(wiiIDNumber)
 	}
 
 	var wiiIDValid bool = wiino.NWC24CheckUserID(wiiIDNumber) == uint8(0)
