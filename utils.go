@@ -5,6 +5,7 @@ import (
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
+	"github.com/RiiConnect24/wiino"
 	"log"
 	"math/rand"
 	"regexp"
@@ -84,7 +85,16 @@ func GenSuccessResponseTyped(divider string) string {
 // checking not empty, is 17 in length, starts with w.
 // BUG(spotlightishere): does not actually determine at a numerical level if valid.
 func friendCodeIsValid(wiiID string) bool {
-	return mailRegex.MatchString(wiiID)
+	var matchstring bool = mailRegex.MatchString(wiiID)
+
+	wiiIDNumber, err := uint64(strconv.Atoi(wiiID[1:]))
+	if err != nil {
+		return false
+	}
+
+	var wiiIDValid bool = wiino.NWC24CheckUserID(wiiIDNumber) == uint8(0)
+
+	return matchstring && wiiIDValid
 }
 
 // GenerateBoundary returns a string with the format Nintendo used for boundaries.
