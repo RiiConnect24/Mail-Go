@@ -5,7 +5,7 @@ import (
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
-	wiino "github.com/RiiConnect24/wiino/golang"
+	"github.com/RiiConnect24/wiino/golang"
 	"log"
 	"math/rand"
 	"regexp"
