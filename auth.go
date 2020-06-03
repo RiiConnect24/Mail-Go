@@ -14,7 +14,8 @@ var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\r\npasswd=(.{16,32})$`)
 // Auth is a function designed to parse potential information from
 // a WC24 request, such as mlchkid and passwd.
 // It takes a given type and attempts to correspond that to one recorded in a database.
-func Auth(form url.Values) (bool, error) {
+// Returns whether or not auth was successful, if so the verified mlid, and any error.
+func Auth(form url.Values) (bool, string, error) {
 	mlid := form.Get("mlid")
 	var passwd string
 
@@ -31,11 +32,11 @@ func Auth(form url.Values) (bool, error) {
 		// Now we need to double check passwd also exists.
 		passwd = form.Get("passwd")
 		if passwd == "" {
-			return false, errors.New("invalid authentication type")
+			return false, "", errors.New("invalid authentication type")
 		}
 	} else {
 		// It's not send nor anything else we know at this point.
-		return false, errors.New("invalid mail ID")
+		return false, "", errors.New("invalid mail ID")
 	}
 
 	// If we're using passwd, we want to select passwd and mlid for security.
@@ -45,7 +46,7 @@ func Auth(form url.Values) (bool, error) {
 
 	stmt, err := db.Prepare("SELECT `passwd` FROM `accounts` WHERE `mlid` = ? AND `passwd` = ?")
 	if err != nil {
-		return false, err
+		return false, "", err
 	}
 
 	var passwdResult string
@@ -53,11 +54,11 @@ func Auth(form url.Values) (bool, error) {
 
 	if err == sql.ErrNoRows {
 		// Not found.
-		return false, nil
+		return false, "", nil
 	} else if err != nil {
 		// Some type of SQL error... pass it on.
-		return false, err
+		return false, "", err
 	} else {
-		return true, nil
+		return true, mlid, nil
 	}
 }

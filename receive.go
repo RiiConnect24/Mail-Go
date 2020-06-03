@@ -21,7 +21,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	isVerified, err := Auth(r.Form)
+	isVerified, mlidWithW, err := Auth(r.Form)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(531, "Something weird happened."))
 		LogError("Error receiving.", err)
@@ -31,9 +31,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	// We already know the mlid is valid from previous
+	// We already know the mlid is valid as Auth checks it for us,
 	// so we don't need to further check.
-	mlidWithW := r.Form.Get("mlid")
 
 	if mlidWithW == "" {
 		fmt.Fprintf(w, GenNormalErrorCode(330, "Unable to parse parameters."))

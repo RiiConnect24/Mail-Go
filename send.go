@@ -40,7 +40,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	}
 
 	// Now check if it can be verified
-	isVerified, err := Auth(r.Form)
+	isVerified, authedWiiId, err := Auth(r.Form)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(551, "Something weird happened."))
 		LogError("Error changing from authentication database.", err)
@@ -89,7 +89,11 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
-				if potentialMailFrom == "w9999999900000000" {
+				// Ensure MAIL FROM matches the authed mlid (#29)
+				if potentialMailFrom != authedWiiId {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
+					break
+				} else if potentialMailFrom == "w9999999900000000" {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
 					break
 				}
