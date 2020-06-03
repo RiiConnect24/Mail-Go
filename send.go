@@ -147,6 +147,18 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			if i > 10 {
 				continue
 			}
+
+			// Check that the account actually exists (#15)
+			var exists bool
+			err2 := db.QueryRow("SELECT EXISTS(SELECT 1 FROM `accounts` WHERE `mlid` = ?)", wiiRecipient).Scan(&exists)
+			if err2 != nil && err != sql.ErrNoRows {
+				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue verifying recipients.")
+				LogError("Error verifying recipient account existence", err)
+				return
+			} else if !exists {
+				// Account doesn't exist, ignore
+				continue
+			}
 			
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
