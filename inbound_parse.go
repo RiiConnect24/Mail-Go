@@ -1,8 +1,10 @@
 package main
 
 import (
+        "encoding/json"
 	"fmt"
 	"io/ioutil"
+        "strings"
 
 	"log"
 	"net/http"
@@ -26,7 +28,6 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 
 	text := r.Form.Get("text")
 
-	// TODO: Properly verify attachments.
 	if r.Form.Get("from") == "" || r.Form.Get("to") == "" {
 		// something was nil
 		log.Println("Something happened to SendGrid... is someone else accessing?")
@@ -56,21 +57,50 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	recipientMlid := potentialMailInformation[1]
 
 	// We "create" a response for the Wii to use, based off attachments and multipart components.
-	// TODO: potentially handle all attachments until first image type?
-	var attachedFile []byte
-	attachment, _, err := r.FormFile("attachment1")
-	if err == http.ErrMissingFile {
-		// We don't care if there's nothing, it'll just stay nil.
-	} else if err != nil {
-		log.Printf("failed to read attachment from form: %v", err)
-		return
-	} else {
-		attachedFile, err = ioutil.ReadAll(attachment)
-		if err != nil {
-			log.Printf("failed to read attachment from form: %v", err)
-			return
-		}
+	type File struct {
+		Filename string `go:"filename"`
+		Charset  string `go:"charset"`
+		Type     string `go:"type"`
 	}
+
+	attachmentInfo := make(map[string]File)
+	err = json.Unmarshal([]byte(r.Form.Get("attachment-info")), &attachmentInfo)
+	if err != nil {
+                log.Printf("failed to unpack json: %v", err)
+                return
+	}
+
+        hasImage := false
+        hasAttachedText := false
+
+        var attachedFile []byte
+
+        for name, attachment := range attachmentInfo {
+	    attachmentData, _, err := r.FormFile(name)
+	    if err == http.ErrMissingFile {
+		// We don't care if there's nothing, it'll just stay nil.
+	    } else if err != nil {
+	    	log.Printf("failed to read attachment from form: %v", err)
+	  	return
+	    } else {
+                if strings.Contains(attachment.Type,  "image") && hasImage == false {
+	    	    attachedFile, err = ioutil.ReadAll(attachmentData)
+              	    if err != nil {
+	    	    	log.Printf("failed to read image attachment from form: %v", err)
+	    	    	return
+	    	    }
+                    hasImage = true
+                } else if strings.Contains(attachment.Type, "text") && hasAttachedText == false && text == "No message provided." {
+                    attachedText, err := ioutil.ReadAll(attachmentData)
+                    text = string(attachedText)
+                    if err != nil {
+                        log.Printf("failed to read text attachment from form: %v", err)
+                        return
+                    }
+                    hasAttachedText = true
+                }
+	    }
+        }
 
 	wiiMail, err := FormulateMail(fromAddress.Address, toAddress, r.Form.Get("subject"), text, attachedFile)
 	if err != nil {

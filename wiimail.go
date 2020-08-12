@@ -58,6 +58,10 @@ func FormulateMail(from string, to string, subject string, body string, potentia
 
 	// The image library interprets known file types automatically.
 	givenImg, _, err := image.Decode(bytes.NewReader(potentialImage))
+        if err != nil {
+                log.Printf("Error transforming image: %v %s", err, potentialImage)
+		return normalMailFormat, nil
+	}
 
 	// The Wii has a max image size of 8192x8192px.
 	// If any dimension exceeds that, scale to fit.
