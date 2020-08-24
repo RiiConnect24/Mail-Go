@@ -96,7 +96,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				if potentialMailFrom != authedWiiId || potentialMailFrom2 != authedWiiId {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
 					break
-				} else if potentialMailFrom == "w9999999900000000" || potentialMailFrom2 != authedWiiId {
+				} else if potentialMailFrom == "w9999999900000000" || potentialMailFrom2 == "w9999999900000000" {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
 					break
 				}
