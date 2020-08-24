@@ -14,6 +14,7 @@ import (
 
 var mailFormName = regexp.MustCompile(`m\d+`)
 var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
+var mailFrom2 = regexp.MustCompile(`^From:\s(w[0-9]*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
@@ -87,13 +88,15 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			}
 
 			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
-			if potentialMailFromWrapper != nil {
+			potentialMailFromWrapper2 := mailFrom2.FindStringSubmatch(line)
+			if potentialMailFromWrapper != nil && potentialMailFromWrapper2 != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
+				potentialMailFrom2 := potentialMailFromWrapper2[1]
 				// Ensure MAIL FROM matches the authed mlid (#29)
-				if potentialMailFrom != authedWiiId {
+				if potentialMailFrom != authedWiiId || potentialMailFrom2 != authedWiiId {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
 					break
-				} else if potentialMailFrom == "w9999999900000000" {
+				} else if potentialMailFrom == "w9999999900000000" || potentialMailFrom2 != authedWiiId {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
 					break
 				}
