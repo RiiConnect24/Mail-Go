@@ -103,7 +103,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
                 continue
             }
 
-            potentialFromWrapper2 := mailFrom2.FindStringSubmatch(line)
+            potentialMailFromWrapper2 := mailFrom2.FindStringSubmatch(line)
             if potentialMailFromWrapper2 != nil {
                 potentialMailFrom2 := potentialFromWrapper2[1]
                 // Ensure From matches the authed mlid (#29)
