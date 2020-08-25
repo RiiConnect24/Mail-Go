@@ -87,23 +87,34 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				continue
 			}
 
-			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
-			potentialMailFromWrapper2 := mailFrom2.FindStringSubmatch(line)
-			if potentialMailFromWrapper != nil && potentialMailFromWrapper2 != nil {
-				potentialMailFrom := potentialMailFromWrapper[1]
-				potentialMailFrom2 := potentialMailFromWrapper2[1]
-				// Ensure MAIL FROM matches the authed mlid (#29)
-				if potentialMailFrom != authedWiiId || potentialMailFrom2 != authedWiiId {
-					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
-					break
-				} else if potentialMailFrom == "w9999999900000000" || potentialMailFrom2 == "w9999999900000000" {
-					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
-					break
-				}
-				senderID = potentialMailFrom
-				linesToRemove += fmt.Sprintln(line)
-				continue
-			}
+            potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
+            if potentialMailFromWrapper != nil {
+                potentialMailFrom := potentialMailFromWrapper[1]
+                // Ensure MAIL FROM matches the authed mlid (#29)
+                if potentialMailFrom != authedWiiId {
+                    eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
+                    break
+                } else if potentialMailFrom == "w9999999900000000" {
+                    eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
+                    break
+                }
+                senderID = potentialMailFrom
+                linesToRemove += fmt.Sprintln(line)
+                continue
+            }
+
+            potentialFromWrapper := mailFrom2.FindStringSubmatch(line)
+            if potentialFromWrapper != nil {
+                potentialFrom := potentialFromWrapper[1]
+                // Ensure From matches the authed mlid (#29)
+                if potentialFrom != authedWiiId {
+                    eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
+                    return
+                } else if potentialMailFrom == "w9999999900000000" {
+                    eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
+                    return
+                }
+            }
 
 			// -1 signifies all matches
 			potentialRecipientWrapper := rcptFrom.FindAllStringSubmatch(line, -1)
