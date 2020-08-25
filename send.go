@@ -13,8 +13,8 @@ import (
 )
 
 var mailFormName = regexp.MustCompile(`m\d+`)
-var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(w[0-9]*)@(?:.*)$`)
-var mailFrom2 = regexp.MustCompile(`^From:\s(w[0-9]*)@(?:.*)$`)
+var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(.*)@(?:.*)$`)
+var mailFrom2 = regexp.MustCompile(`^From:\s(.*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
