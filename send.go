@@ -105,7 +105,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 
             potentialMailFromWrapper2 := mailFrom2.FindStringSubmatch(line)
             if potentialMailFromWrapper2 != nil {
-                potentialMailFrom2 := potentialFromWrapper2[1]
+                potentialMailFrom2 := potentialMailFromWrapper2[1]
                 // Ensure From matches the authed mlid (#29)
                 if potentialMailFrom2 != authedWiiId {
                     eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
