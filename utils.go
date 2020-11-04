@@ -87,14 +87,19 @@ func GenSuccessResponseTyped(divider string) string {
 func friendCodeIsValid(wiiID string) bool {
 	var matchstring bool = mailRegex.MatchString(wiiID)
 
-	wiiIDNumber, err := strconv.Atoi(wiiID[1:])
-	if err != nil {
+	if matchstring {
+		wiiIDNumber, err := strconv.Atoi(wiiID[1:])
+		if err != nil {
+			return false
+		}
+		var wiiIDValid bool = wiino.NWC24CheckUserID(uint64(wiiIDNumber)) == uint8(0)
+		
+		return wiiIDValid
+	} else {
 		return false
 	}
 
-	var wiiIDValid bool = wiino.NWC24CheckUserID(uint64(wiiIDNumber)) == uint8(0)
-
-	return matchstring && wiiIDValid
+	return false
 }
 
 // GenerateBoundary returns a string with the format Nintendo used for boundaries.

@@ -197,16 +197,39 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue sending mail via SendGrid.")
 				return
 			}
-			
+
+			if pcRecipient == "trigger@applet.ifttt.com" {
+				// Send dummy confirmation mail for IFTTT.
+				var iftttMail string
+
+				iftttMail = "From: trigger@applet.ifttt.com\n"
+				iftttMail += "Subject: Trigger\n"
+				iftttMail += "To: " + senderID + "@rc24.xyz\n"
+				iftttMail += "MIME-Version: 1.0\n"
+                                iftttMail += "Content-Type: MULTIPART/mixed; BOUNDARY=\"ifttt\"\n"
+				iftttMail += "--ifttt\n"
+				iftttMail += "Content-Type: TEXT/plain; CHARSET=utf-8\n"
+				iftttMail += "Content-Description: wiimail\n\n"
+				iftttMail += "Trigger has been ran!\n\n"
+				// iftttMail += "--ifttt--"
+
+				_, err := stmt.Exec("trigger@applet.ifttt.com", iftttMail, senderID[1:], uuid.New().String(), uuid.New().String())
+				if err != nil {
+        	                        eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
+                	                LogError("Error inserting mail", err)
+					return
+				}
+                        }
+
 			i += 1
 		}
 		eventualOutput += GenMailErrorCode(mailNumber, 100, "Success.")
-	}
 
-	if global.Datadog {
-		err := dataDogClient.Incr("mail.sent_mail", nil, float64(len(mailPart)))
-		if err != nil {
-			panic(err)
+		if global.Datadog {
+			err := dataDogClient.Incr("mail.sent_mail", nil, 1.0)
+			if err != nil {
+				panic(err)
+			}
 		}
 	}
 
