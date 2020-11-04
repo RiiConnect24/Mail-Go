@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/DataDog/datadog-go/statsd"
 	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
@@ -14,7 +15,6 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"github.com/DataDog/datadog-go/statsd"
 )
 
 var global patch.Config
@@ -148,7 +148,7 @@ func main() {
 		}
 	}
 
-	if global.Datadog  {
+	if global.Datadog {
 		dataDogClient, err = statsd.New("127.0.0.1:8125")
 		if err != nil {
 			panic(err)

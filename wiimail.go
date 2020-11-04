@@ -58,8 +58,8 @@ func FormulateMail(from string, to string, subject string, body string, potentia
 
 	// The image library interprets known file types automatically.
 	givenImg, _, err := image.Decode(bytes.NewReader(potentialImage))
-        if err != nil {
-                log.Printf("Error transforming image: %v %s", err, potentialImage)
+	if err != nil {
+		log.Printf("Error transforming image: %v %s", err, potentialImage)
 		return normalMailFormat, nil
 	}
 

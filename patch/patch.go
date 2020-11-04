@@ -1,16 +1,16 @@
 package patch
 
 import (
-	"errors"
-	"encoding/binary"
 	"bytes"
-	"io/ioutil"
-	"database/sql"
 	"crypto/sha512"
+	"database/sql"
+	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/getsentry/raven-go"
 	"github.com/DataDog/datadog-go/statsd"
+	"github.com/getsentry/raven-go"
+	"io/ioutil"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
@@ -59,7 +59,7 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClie
 		return nil, err
 	}
 
-	if global.Datadog  {
+	if global.Datadog {
 		dataDogClient, err := statsd.New("127.0.0.1:8125")
 		if err != nil {
 			panic(err)
@@ -73,7 +73,7 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClie
 
 	// Alright, now it's time to patch.
 	var newMailDomain [64]byte
-	copy(newMailDomain[:], []byte("@" + global.SendGridDomain))
+	copy(newMailDomain[:], []byte("@"+global.SendGridDomain))
 	config.MailDomain = newMailDomain
 
 	// Copy changed credentials

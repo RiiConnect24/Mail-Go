@@ -1,11 +1,11 @@
 package patch
 
 import (
-	"time"
+	"github.com/getsentry/raven-go"
+	"log"
 	"math/rand"
 	"runtime"
-	"log"
-	"github.com/getsentry/raven-go"
+	"time"
 )
 
 // https://stackoverflow.com/a/31832326/3874884
@@ -37,7 +37,7 @@ func RandStringBytesMaskImprSrc(n int) string {
 	return string(b)
 }
 
-func LogError(ravenClient *raven.Client,reason string, err error) {
+func LogError(ravenClient *raven.Client, reason string, err error) {
 	// Adapted from
 	// https://stackoverflow.com/a/38551362
 	pc, _, _, ok := runtime.Caller(1)

@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
+	"github.com/RiiConnect24/wiino/golang"
 	"github.com/getsentry/raven-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora"
-	"github.com/RiiConnect24/wiino/golang"
 	"log"
 	"math/rand"
 	"regexp"
@@ -93,7 +93,7 @@ func friendCodeIsValid(wiiID string) bool {
 			return false
 		}
 		var wiiIDValid bool = wiino.NWC24CheckUserID(uint64(wiiIDNumber)) == uint8(0)
-		
+
 		return wiiIDValid
 	} else {
 		return false

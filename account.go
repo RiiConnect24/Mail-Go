@@ -66,7 +66,7 @@ func Account(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if global.Datadog  {
+	if global.Datadog {
 		err = dataDogClient.Incr("mail.accounts_registered", nil, 1)
 		if err != nil {
 			panic(err)

@@ -65,14 +65,14 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	mailFlag := "000000000000000000000000000000000"
 	resultsLoop := 0
 	size := 0
-	
+
 	var mlid string
 
 	// Scan through returned rows.
 	defer result.Close()
 	for result.Next() {
 		err = result.Scan(&mlid)
-		
+
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {

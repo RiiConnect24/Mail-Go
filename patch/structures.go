@@ -35,6 +35,6 @@ type Config struct {
 	Debug           bool
 	PatchBaseDomain string
 	RavenDSN        string
-	Datadog        bool
-	SupportEmail	string
+	Datadog         bool
+	SupportEmail    string
 }

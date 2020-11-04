@@ -87,34 +87,34 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				continue
 			}
 
-            potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
-            if potentialMailFromWrapper != nil {
-                potentialMailFrom := potentialMailFromWrapper[1]
-                // Ensure MAIL FROM matches the authed mlid (#29)
-                if potentialMailFrom != authedWiiId {
-                    eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
-                    break
-                } else if potentialMailFrom == "w9999999900000000" {
-                    eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
-                    break
-                }
-                senderID = potentialMailFrom
-                linesToRemove += fmt.Sprintln(line)
-                continue
-            }
+			potentialMailFromWrapper := mailFrom.FindStringSubmatch(line)
+			if potentialMailFromWrapper != nil {
+				potentialMailFrom := potentialMailFromWrapper[1]
+				// Ensure MAIL FROM matches the authed mlid (#29)
+				if potentialMailFrom != authedWiiId {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
+					break
+				} else if potentialMailFrom == "w9999999900000000" {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
+					break
+				}
+				senderID = potentialMailFrom
+				linesToRemove += fmt.Sprintln(line)
+				continue
+			}
 
-            potentialMailFromWrapper2 := mailFrom2.FindStringSubmatch(line)
-            if potentialMailFromWrapper2 != nil {
-                potentialMailFrom2 := potentialMailFromWrapper2[1]
-                // Ensure From matches the authed mlid (#29)
-                if potentialMailFrom2 != authedWiiId {
-                    eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
-                    return
-                } else if potentialMailFrom2 == "w9999999900000000" {
-                    eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
-                    return
-                }
-            }
+			potentialMailFromWrapper2 := mailFrom2.FindStringSubmatch(line)
+			if potentialMailFromWrapper2 != nil {
+				potentialMailFrom2 := potentialMailFromWrapper2[1]
+				// Ensure From matches the authed mlid (#29)
+				if potentialMailFrom2 != authedWiiId {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
+					return
+				} else if potentialMailFrom2 == "w9999999900000000" {
+					eventualOutput += GenMailErrorCode(mailNumber, 351, "w9999999900000000 tried to send mail.")
+					return
+				}
+			}
 
 			// -1 signifies all matches
 			potentialRecipientWrapper := rcptFrom.FindAllStringSubmatch(line, -1)
@@ -173,7 +173,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				// Account doesn't exist, ignore
 				continue
 			}
-			
+
 			// Splice wiiRecipient to drop w from 16 digit ID.
 			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
@@ -181,7 +181,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				LogError("Error inserting mail", err)
 				return
 			}
-			
+
 			i += 1
 		}
 
@@ -190,7 +190,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			if i > 10 {
 				continue
 			}
-			
+
 			err := handlePCmail(config, senderID, pcRecipient, mailContents)
 			if err != nil {
 				LogError("Error sending mail via SendGrid", err)
@@ -206,7 +206,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				iftttMail += "Subject: Trigger\n"
 				iftttMail += "To: " + senderID + "@rc24.xyz\n"
 				iftttMail += "MIME-Version: 1.0\n"
-                                iftttMail += "Content-Type: MULTIPART/mixed; BOUNDARY=\"ifttt\"\n"
+				iftttMail += "Content-Type: MULTIPART/mixed; BOUNDARY=\"ifttt\"\n"
 				iftttMail += "--ifttt\n"
 				iftttMail += "Content-Type: TEXT/plain; CHARSET=utf-8\n"
 				iftttMail += "Content-Description: wiimail\n\n"
@@ -215,11 +215,11 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 
 				_, err := stmt.Exec("trigger@applet.ifttt.com", iftttMail, senderID[1:], uuid.New().String(), uuid.New().String())
 				if err != nil {
-        	                        eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
-                	                LogError("Error inserting mail", err)
+					eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
+					LogError("Error inserting mail", err)
 					return
 				}
-                        }
+			}
 
 			i += 1
 		}
