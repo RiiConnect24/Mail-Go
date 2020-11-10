@@ -72,6 +72,10 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	defer result.Close()
 	for result.Next() {
 		err = result.Scan(&mlid)
+		if err != nil {
+			LogError("Unable to run mlid", err)
+			return
+		}
 
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
