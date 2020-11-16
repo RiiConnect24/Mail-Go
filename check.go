@@ -58,6 +58,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 
 	mlidStatement, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
 	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 		LogError("Unable to prepare mlid statement", err)
 	}
 
@@ -67,12 +68,18 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	size := 0
 
 	var mlid string
+	
+	if mlid == nil {
+		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
+		return
+	}
 
 	// Scan through returned rows.
 	defer result.Close()
 	for result.Next() {
 		err = result.Scan(&mlid)
 		if err != nil {
+			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 			LogError("Unable to run mlid", err)
 			return
 		}
@@ -80,6 +87,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
 		if err != nil {
+			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 			LogError("Unable to run mlid", err)
 			return
 		}
