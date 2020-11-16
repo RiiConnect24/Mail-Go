@@ -68,11 +68,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	size := 0
 
 	var mlid string
-	
-	if mlid == "" {
-		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-		return
-	}
 
 	// Scan through returned rows.
 	defer result.Close()
@@ -81,6 +76,11 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		if err != nil {
 			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 			LogError("Unable to run mlid", err)
+			return
+		}
+	
+		if mlid == "" {
+			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 			return
 		}
 
