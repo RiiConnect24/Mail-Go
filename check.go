@@ -69,7 +69,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 
 	var mlid string
 	
-	if mlid == nil {
+	if mlid == "" {
 		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
 		return
 	}
