@@ -1,4 +1,4 @@
-version: "3"
+version: "2.4"
 
 services:
   mail:
@@ -10,5 +10,7 @@ services:
       - "8080:80"
     restart: on-failure
     network_mode: "host"
+    cpu_percent: 25
+    mem_limit: 2048000000
 volumes:
   mail_data:
