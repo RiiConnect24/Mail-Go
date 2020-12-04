@@ -82,24 +82,27 @@ func GenSuccessResponseTyped(divider string) string {
 }
 
 // friendCodeIsValid determines if a friend code is valid by
-// checking not empty, is 17 in length, starts with w.
-// BUG(spotlightishere): does not actually determine at a numerical level if valid.
-func friendCodeIsValid(wiiID string) bool {
-	var matchstring bool = mailRegex.MatchString(wiiID)
-
-	if matchstring {
-		wiiIDNumber, err := strconv.Atoi(wiiID[1:])
-		if err != nil {
-			return false
-		}
-		var wiiIDValid bool = wiino.NWC24CheckUserID(uint64(wiiIDNumber)) == uint8(0)
-
-		return wiiIDValid
-	} else {
+// checking not empty, is 17 in length, and starts with w.
+// It then checks the numerical validity of the friend code.
+func friendCodeIsValid(friendCode string) bool {
+	// An empty or invalid length mlid is automatically false.
+	if friendCode == "" || len(friendCode) != 17 {
 		return false
 	}
 
-	return false
+	// Ensure the provided mlid is the correct format.
+	if !mailRegex.MatchString(friendCode) {
+		return false
+	}
+
+	// We verified previously that the last 16 characters are digits. This should not fail.
+	// However, should it, we do not want to hint to the user any error occurred and return false.
+	wiiId, err := strconv.Atoi(friendCode[1:])
+	if err != nil {
+		return false
+	}
+
+	return wiino.NWC24CheckUserID(uint64(wiiId)) == 0
 }
 
 // GenerateBoundary returns a string with the format Nintendo used for boundaries.

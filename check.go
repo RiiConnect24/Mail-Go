@@ -78,11 +78,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 			LogError("Unable to run mlid", err)
 			return
 		}
-	
-		if mlid == "" {
-			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-			return
-		}
 
 		// Splice off w from mlid
 		storedMail, err := mlidStatement.Query(mlid[1:])
