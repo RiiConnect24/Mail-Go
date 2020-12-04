@@ -1,12 +1,15 @@
-FROM golang:1.11-alpine3.8 as builder
+FROM golang:1.15-alpine3.12 as builder
 
 # We assume only git is needed for all dependencies.
 # openssl is already built-in.
 RUN apk add -U --no-cache git
 
 WORKDIR /go/src/github.com/RiiConnect24/Mail-Go
-COPY get.sh /go/src/github.com/RiiConnect24/Mail-Go
-RUN sh get.sh
+
+# Cache pulled dependencies if not updated.
+COPY go.mod .
+COPY go.sum .
+RUN go mod download
 
 # Copy necessary parts of the Mail-Go source into builder's source
 COPY *.go ./
@@ -18,7 +21,7 @@ RUN go build -o app .
 ###########
 # RUNTIME #
 ###########
-FROM alpine:3.8
+FROM alpine:3.12
 
 WORKDIR /go/src/github.com/RiiConnect24/Mail-Go/
 COPY --from=builder /go/src/github.com/RiiConnect24/Mail-Go/ .
