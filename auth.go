@@ -16,7 +16,7 @@ var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\r\npasswd=(.{16,32})$`)
 // It takes a given type and attempts to correspond that to one recorded in a database.
 // Returns whether or not auth was successful, if so the verified mlid, and any error.
 func Auth(form url.Values) (bool, string, error) {
-	var mlid string
+	mlid := form.Get("mlid")
 	var passwd string
 
 	// First, check if it's the send format of mlid.
@@ -30,7 +30,6 @@ func Auth(form url.Values) (bool, string, error) {
 		passwd = sendFormat[2]
 	} else if friendCodeIsValid(mlid) {
 		// Now we need to double check passwd also exists.
-		mlid = form.Get("mlid")
 		passwd = form.Get("passwd")
 		if passwd == "" {
 			return false, "", errors.New("invalid authentication type")
