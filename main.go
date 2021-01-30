@@ -136,6 +136,10 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
+
+	// Ensure Mail-Go does not overload the backing database.
+	db.SetMaxOpenConns(50)
+
 	err = db.Ping()
 	if err != nil {
 		panic(err)
@@ -170,24 +174,7 @@ func main() {
 
 	// Site
 	http.HandleFunc("/patch", configHandle)
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Load from site folder
-		var file []byte
-		var err error
-		if r.URL.Path == "/" {
-			// We want index.html
-			file, err = ioutil.ReadFile("./patch/site/index.html")
-		} else {
-			file, err = ioutil.ReadFile("./patch/site" + r.URL.Path)
-		}
-
-		// We only want existing pages.
-		if err != nil {
-			http.NotFound(w, r)
-			return
-		}
-		w.Write(file)
-	})
+	http.Handle("/", http.FileServer(http.Dir("./patch/site")))
 
 	log.Println("Running...")
 
