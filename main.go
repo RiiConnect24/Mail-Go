@@ -1,7 +1,9 @@
 package main
 
 import (
+	httptrace "gopkg.in/DataDog/dd-trace-go.v1/contrib/net/http"
 	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
@@ -98,7 +100,19 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	tracer.Start(tracer.WithAgentAddr("localhost:8126"))
+        tracer.Start(
+            tracer.WithService("mail"),
+            tracer.WithEnv("prod"),
+        )
+        defer tracer.Stop()
+
+        if err := profiler.Start(
+            profiler.WithService("mail"),
+            profiler.WithEnv("prod"),
+        ); err != nil {
+            log.Fatal(err)
+        }
+        defer profiler.Stop()
 	
 	// Get salt for passwords
 	saltLocation := "config/salt.bin"
@@ -183,6 +197,4 @@ func main() {
 
 	// We do this to log all access to the page.
 	log.Fatal(http.ListenAndServe(global.BindTo, logRequest(http.DefaultServeMux)))
-	
-	defer tracer.Stop()
 }
