@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
@@ -97,6 +98,8 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	tracer.Start()
+	
 	// Get salt for passwords
 	saltLocation := "config/salt.bin"
 	salt, err := ioutil.ReadFile(saltLocation)
@@ -180,4 +183,6 @@ func main() {
 
 	// We do this to log all access to the page.
 	log.Fatal(http.ListenAndServe(global.BindTo, logRequest(http.DefaultServeMux)))
+	
+	defer tracer.Stop()
 }
