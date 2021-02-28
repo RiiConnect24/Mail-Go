@@ -98,7 +98,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	tracer.Start()
+	tracer.Start(tracer.WithAgentAddr("datadog-agent:8126"))
 	
 	// Get salt for passwords
 	saltLocation := "config/salt.bin"
