@@ -17,6 +17,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"time"
 )
 
 var global patch.Config
@@ -156,6 +157,8 @@ func main() {
 
 	// Ensure Mail-Go does not overload the backing database.
 	db.SetMaxOpenConns(50)
+	db.SetMaxIdleConns(50)
+	db.SetConnMaxLifetime(time.Second * 10)
 
 	err = db.Ping()
 	if err != nil {
