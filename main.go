@@ -102,7 +102,7 @@ func main() {
         tracer.Start(
             tracer.WithService("mail"),
             tracer.WithEnv("prod"),
-	    tracer.WithAgentAddr("datadog-agent:8126"),
+	    tracer.WithAgentAddr("127.0.0.1:8126"),
         )
         defer tracer.Stop()
 
