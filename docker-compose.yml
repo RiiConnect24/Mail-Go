@@ -12,7 +12,5 @@ services:
     network_mode: "host"
     cpu_percent: 25
     mem_limit: 2048000000
-    networks:
-      - rc24
 volumes:
   mail_data:
