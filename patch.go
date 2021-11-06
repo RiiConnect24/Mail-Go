@@ -1,22 +1,18 @@
-package patch
+package main
 
 import (
 	"bytes"
 	"crypto/sha512"
-	"database/sql"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/DataDog/datadog-go/v5/statsd"
-	"github.com/getsentry/sentry-go"
 	"io/ioutil"
-	"log"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
-func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, dataDogClient *statsd.Client, salt []byte) ([]byte, error) {
+func ModifyNwcConfig(originalConfig []byte) ([]byte, error) {
 	if len(originalConfig) == 0 {
 		return nil, errors.New("config seems to be empty. double check you uploaded a file")
 	}
@@ -48,17 +44,10 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, dataDogCl
 	passwdByte := sha512.Sum512(append(salt, []byte(passwd)...))
 	passwdHash := hex.EncodeToString(passwdByte[:])
 
-	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
+	// We can reuse the statement defined for normal account creation.
+	_, err = createAccountStmt.Exec(mlid, mlchkidHash, passwdHash)
 	if err != nil {
-		log.Printf("Error preparing account statement: %v", err)
-		sentry.CaptureException(err)
-		return nil, err
-	}
-
-	_, err = stmt.Exec(mlid, mlchkidHash, passwdHash)
-	if err != nil {
-		log.Printf("Error running account statement: %v", err)
-		sentry.CaptureException(err)
+		LogError("Error running account statement", err)
 		return nil, err
 	}
 

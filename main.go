@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/DataDog/datadog-go/v5/statsd"
-	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/getsentry/sentry-go"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/logrusorgru/aurora/v3"
@@ -20,7 +19,7 @@ import (
 	"time"
 )
 
-var global patch.Config
+var global Config
 var db *sql.DB
 var salt []byte
 var dataDogClient *statsd.Client
@@ -80,7 +79,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		patched, err := patch.ModifyNwcConfig(file, db, global, dataDogClient, salt)
+		patched, err := ModifyNwcConfig(file)
 		if err != nil {
 			LogError("Unable to patch", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -206,7 +205,7 @@ func main() {
 
 	// Site
 	http.HandleFunc("/patch", configHandle)
-	http.Handle("/", http.FileServer(http.Dir("./patch/site")))
+	http.Handle("/", http.FileServer(http.Dir("./patch")))
 
 	log.Println("Running...")
 

@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"database/sql"
 	"fmt"
-	"github.com/RiiConnect24/Mail-Go/patch"
 	"github.com/google/uuid"
 	"net/http"
 	"net/smtp"
@@ -36,7 +35,7 @@ var mailFrom2 = regexp.MustCompile(`^From:\s(.*)@(?:.*)$`)
 var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
-func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Config) {
+func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 
 	// Create maps for storage of mail.
@@ -247,7 +246,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 	fmt.Fprint(w, eventualOutput)
 }
 
-func handlePCmail(config patch.Config, senderID string, pcRecipient string, mailContents string) error {
+func handlePCmail(config Config, senderID string, pcRecipient string, mailContents string) error {
 	// Connect to the remote SMTP server.
 	host := "smtp.sendgrid.net"
 	auth := smtp.PlainAuth(
