@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v3"
 	"log"
 	"net/http"
 	"strconv"

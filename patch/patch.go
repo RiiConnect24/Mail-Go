@@ -8,14 +8,15 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/DataDog/datadog-go/statsd"
-	"github.com/getsentry/raven-go"
+	"github.com/DataDog/datadog-go/v5/statsd"
+	"github.com/getsentry/sentry-go"
 	"io/ioutil"
+	"log"
 )
 
 // ModifyNwcConfig takes an original config, applies needed patches to the URL and such,
 // updates the checksum and returns either nil, error or a patched config w/o error.
-func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClient *raven.Client, salt []byte) ([]byte, error) {
+func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, dataDogClient *statsd.Client, salt []byte) ([]byte, error) {
 	if len(originalConfig) == 0 {
 		return nil, errors.New("config seems to be empty. double check you uploaded a file")
 	}
@@ -49,22 +50,19 @@ func ModifyNwcConfig(originalConfig []byte, db *sql.DB, global Config, ravenClie
 
 	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`mlchkid`, `passwd` ) VALUES (?, ?, ?)")
 	if err != nil {
-		LogError(ravenClient, "Error preparing account statement", err)
+		log.Printf("Error preparing account statement: %v", err)
+		sentry.CaptureException(err)
 		return nil, err
 	}
 
 	_, err = stmt.Exec(mlid, mlchkidHash, passwdHash)
 	if err != nil {
-		LogError(ravenClient, "Error running account statement", err)
+		log.Printf("Error running account statement: %v", err)
+		sentry.CaptureException(err)
 		return nil, err
 	}
 
 	if global.Datadog {
-		dataDogClient, err := statsd.New("127.0.0.1:8125")
-		if err != nil {
-			panic(err)
-		}
-
 		err = dataDogClient.Incr("mail.accounts_registered", nil, 1)
 		if err != nil {
 			panic(err)
