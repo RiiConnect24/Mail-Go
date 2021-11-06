@@ -9,6 +9,17 @@ import (
 	"regexp"
 )
 
+func initAuthDB() {
+	var err error
+	validatePasswdStmt, err = db.Prepare("SELECT `passwd` FROM `accounts` WHERE `mlid` = ? AND `passwd` = ?")
+	if err != nil {
+		LogError("Unable to prepare auth statement", err)
+		panic(err)
+	}
+}
+
+var validatePasswdStmt *sql.Stmt
+
 var sendAuthRegex = regexp.MustCompile(`^mlid=(w\d{16})\r\npasswd=(.{16,32})$`)
 
 // Auth is a function designed to parse potential information from
@@ -44,13 +55,8 @@ func Auth(form url.Values) (bool, string, error) {
 	hashByte := sha512.Sum512(append(salt, []byte(passwd)...))
 	hash := hex.EncodeToString(hashByte[:])
 
-	stmt, err := db.Prepare("SELECT `passwd` FROM `accounts` WHERE `mlid` = ? AND `passwd` = ?")
-	if err != nil {
-		return false, "", err
-	}
-
 	var passwdResult string
-	err = stmt.QueryRow(mlid, hash).Scan(&passwdResult)
+	err := validatePasswdStmt.QueryRow(mlid, hash).Scan(&passwdResult)
 
 	if err == sql.ErrNoRows {
 		// Not found.

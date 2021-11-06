@@ -2,6 +2,7 @@ package main
 
 import (
 	"crypto/sha512"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
@@ -10,6 +11,17 @@ import (
 	"net/http"
 	"strconv"
 )
+
+func initAccountDB() {
+	var err error
+	createAccountStmt, err = db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`passwd`, `mlchkid` ) VALUES (?, ?, ?)")
+	if err != nil {
+		LogError("Unable to prepare account statement", err)
+		panic(err)
+	}
+}
+
+var createAccountStmt *sql.Stmt
 
 func Account(w http.ResponseWriter, r *http.Request) {
 	var is string
@@ -26,18 +38,11 @@ func Account(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, GenAccountErrorCode(610, is, "Invalid Wii Friend Code."))
 		return
 	} else if wiiID == "" {
-		fmt.Fprintf(w, GenNormalErrorCode(310, "Unable to parse parameters."))
+		fmt.Fprint(w, GenNormalErrorCode(310, "Unable to parse parameters."))
 		return
 	}
 
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
-
-	stmt, err := db.Prepare("INSERT IGNORE INTO `accounts` (`mlid`,`passwd`, `mlchkid` ) VALUES (?, ?, ?)")
-	if err != nil {
-		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
-		LogError("Unable to prepare account statement", err)
-		return
-	}
 
 	passwd := RandStringBytesMaskImprSrc(16)
 	passwdByte := sha512.Sum512(append(salt, []byte(passwd)...))
@@ -47,7 +52,7 @@ func Account(w http.ResponseWriter, r *http.Request) {
 	mlchkidByte := sha512.Sum512(append(salt, []byte(mlchkid)...))
 	mlchkidHash := hex.EncodeToString(mlchkidByte[:])
 
-	result, err := stmt.Exec(wiiID, passwdHash, mlchkidHash)
+	result, err := createAccountStmt.Exec(wiiID, passwdHash, mlchkidHash)
 	if err != nil {
 		fmt.Fprint(w, GenAccountErrorCode(410, is, "Database error."))
 		LogError("Unable to execute statement", err)

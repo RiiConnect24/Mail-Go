@@ -12,6 +12,24 @@ import (
 	"strings"
 )
 
+func initSendDB() {
+	var err error
+	mailInsertStmt, err = db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		LogError("Error preparing mail insertion statement", err)
+		panic(err)
+	}
+
+	accountExistsStmt, err = db.Prepare("SELECT EXISTS(SELECT 1 FROM `accounts` WHERE `mlid` = ?)")
+	if err != nil {
+		LogError("Error preparing account existence statement", err)
+		panic(err)
+	}
+}
+
+var mailInsertStmt *sql.Stmt
+var accountExistsStmt *sql.Stmt
+
 var mailFormName = regexp.MustCompile(`m\d+`)
 var mailFrom = regexp.MustCompile(`^MAIL FROM:\s(.*)@(?:.*)$`)
 var mailFrom2 = regexp.MustCompile(`^From:\s(.*)@(?:.*)$`)
@@ -20,20 +38,12 @@ var rcptFrom = regexp.MustCompile(`^RCPT TO:\s(.*)@(.*)$`)
 // Send takes POSTed mail by the Wii and stores it in the database for future usage.
 func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Config) {
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
-	// Go ahead and prepare the insert statement, for later usage.
-	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
-	if err != nil {
-		// Welp, that went downhill fast.
-		fmt.Fprint(w, GenNormalErrorCode(450, "Database error."))
-		LogError("Prepared send statement error", err)
-		return
-	}
 
 	// Create maps for storage of mail.
 	mailPart := make(map[string]string)
 
 	// Parse form in preparation for finding mail.
-	err = r.ParseMultipartForm(-1)
+	err := r.ParseMultipartForm(-1)
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(350, "Failed to parse mail."))
 		LogError("Failed to parse mail", err)
@@ -164,8 +174,8 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 
 			// Check that the account actually exists (#15)
 			var exists bool
-			err2 := db.QueryRow("SELECT EXISTS(SELECT 1 FROM `accounts` WHERE `mlid` = ?)", wiiRecipient).Scan(&exists)
-			if err2 != nil && err != sql.ErrNoRows {
+			existsErr := accountExistsStmt.QueryRow(wiiRecipient).Scan(&exists)
+			if existsErr != nil && existsErr != sql.ErrNoRows {
 				eventualOutput += GenMailErrorCode(mailNumber, 551, "Issue verifying recipients.")
 				LogError("Error verifying recipient account existence", err)
 				return
@@ -175,7 +185,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 			}
 
 			// Splice wiiRecipient to drop w from 16 digit ID.
-			_, err := stmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
+			_, err := mailInsertStmt.Exec(senderID, mailContents, wiiRecipient[1:], uuid.New().String(), uuid.New().String())
 			if err != nil {
 				eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
 				LogError("Error inserting mail", err)
@@ -213,7 +223,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config patch.Confi
 				iftttMail += "Trigger has been ran!\n\n"
 				// iftttMail += "--ifttt--"
 
-				_, err := stmt.Exec("trigger@applet.ifttt.com", iftttMail, senderID[1:], uuid.New().String(), uuid.New().String())
+				_, err := mailInsertStmt.Exec("trigger@applet.ifttt.com", iftttMail, senderID[1:], uuid.New().String(), uuid.New().String())
 				if err != nil {
 					eventualOutput += GenMailErrorCode(mailNumber, 450, "Database error.")
 					LogError("Error inserting mail", err)

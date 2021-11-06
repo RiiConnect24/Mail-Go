@@ -99,20 +99,28 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	tracer.Start(
-		tracer.WithService("mail"),
-		tracer.WithEnv("prod"),
-		tracer.WithAgentAddr("127.0.0.1:8126"),
-	)
-	defer tracer.Stop()
+	if global.Datadog {
+		var err error
+		dataDogClient, err = statsd.New("127.0.0.1:8125")
+		if err != nil {
+			panic(err)
+		}
 
-	if err := profiler.Start(
-		profiler.WithService("mail"),
-		profiler.WithEnv("prod"),
-	); err != nil {
-		log.Fatal(err)
+		tracer.Start(
+			tracer.WithService("mail"),
+			tracer.WithEnv("prod"),
+			tracer.WithAgentAddr("127.0.0.1:8126"),
+		)
+		defer tracer.Stop()
+
+		if err := profiler.Start(
+			profiler.WithService("mail"),
+			profiler.WithEnv("prod"),
+		); err != nil {
+			log.Fatal(err)
+		}
+		defer profiler.Stop()
 	}
-	defer profiler.Stop()
 
 	// Get salt for passwords
 	saltLocation := "config/salt.bin"
@@ -164,18 +172,20 @@ func main() {
 		panic(err)
 	}
 
+	// Prepare database
+	initAccountDB()
+	initAuthDB()
+	initCheckDB()
+	initDeleteDB()
+	initInboundParseDB()
+	initReceiveDB()
+	initSendDB()
+
 	// Configure Sentry
 	if global.RavenDSN != "" {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn: global.RavenDSN,
 		})
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	if global.Datadog {
-		dataDogClient, err = statsd.New("127.0.0.1:8125")
 		if err != nil {
 			panic(err)
 		}

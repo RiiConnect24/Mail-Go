@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+func initReceiveDB() {
+	var err error
+	getReceiveStmt, err = db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	if err != nil {
+		LogError("Error preparing mail retrieval statement", err)
+		panic(err)
+	}
+
+	// Statement to mark as sent once put in mail output
+	updateMailStateStmt, err = db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
+	if err != nil {
+		LogError("Error preparing mail state update statement", err)
+		panic(err)
+	}
+}
+
+var getReceiveStmt *sql.Stmt
+var updateMailStateStmt *sql.Stmt
+
 // Receive loops through stored mail and formulates a response.
 // Then, if applicable, marks the mail as received.
 func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
@@ -47,12 +66,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	stmt, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
-	if err != nil {
-		LogError("Error preparing statement", err)
-		return
-	}
-	storedMail, err := stmt.Query(mlid)
+	storedMail, err := getReceiveStmt.Query(mlid)
 	if err != nil {
 		LogError("Error running query against mlid", err)
 		return
@@ -61,13 +75,6 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	var totalMailOutput string
 	amountOfMail := 0
 	mailSize := 0
-
-	// Statement to mark as sent once put in mail output
-	updateMailState, err := db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
-	if err != nil {
-		LogError("Error preparing sent statement", err)
-		return
-	}
 
 	// Loop through mail and make the output.
 	wc24MimeBoundary := GenerateBoundary()
@@ -111,7 +118,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 			mailSize += len(mail)
 
 			// We're committed at this point. Mark it that way in the db.
-			_, err := updateMailState.Exec(mailId)
+			_, err := updateMailStateStmt.Exec(mailId)
 			if err != nil {
 				LogError("Unable to mark mail as sent", err)
 			}

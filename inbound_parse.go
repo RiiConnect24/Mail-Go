@@ -1,6 +1,7 @@
 package main
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +15,16 @@ import (
 	"github.com/google/uuid"
 )
 
+func initInboundParseDB() {
+	var err error
+	inboundParseStmt, err = db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
+	if err != nil {
+		LogError("Unable to prepare inbound parse statement", err)
+		panic(err)
+	}
+}
+
+var inboundParseStmt *sql.Stmt
 var mailDomain *regexp.Regexp
 
 func sendGridHandler(w http.ResponseWriter, r *http.Request) {
@@ -108,14 +119,7 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	// On a normal Wii service, we'd return the cd/msg response.
 	// This goes to SendGrid, and we hope the database error is resolved
 	// later on - any non-success tells it to POST again.
-	stmt, err := db.Prepare("INSERT INTO `mails` (`sender_wiiID`,`mail`, `recipient_id`, `mail_id`, `message_id`) VALUES (?, ?, ?, ?, ?)")
-	if err != nil {
-		log.Printf("Database error: %v", err)
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	_, err = stmt.Exec(fromAddress.Address, wiiMail, recipientMlid, uuid.New().String(), uuid.New().String())
+	_, err = inboundParseStmt.Exec(fromAddress.Address, wiiMail, recipientMlid, uuid.New().String(), uuid.New().String())
 	if err != nil {
 		log.Printf("Database error: %v", err)
 		w.WriteHeader(http.StatusInternalServerError)
