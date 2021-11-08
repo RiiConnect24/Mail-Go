@@ -1,17 +1,16 @@
 package main
 
 import (
-	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
-	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/DataDog/datadog-go/statsd"
-	"github.com/RiiConnect24/Mail-Go/patch"
-	"github.com/getsentry/raven-go"
+	"github.com/DataDog/datadog-go/v5/statsd"
+	"github.com/getsentry/sentry-go"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v3"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
+	"gopkg.in/DataDog/dd-trace-go.v1/profiler"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -20,10 +19,9 @@ import (
 	"time"
 )
 
-var global patch.Config
+var global Config
 var db *sql.DB
 var salt []byte
-var ravenClient *raven.Client
 var dataDogClient *statsd.Client
 
 func logRequest(handler http.Handler) http.Handler {
@@ -81,7 +79,7 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 
-		patched, err := patch.ModifyNwcConfig(file, db, global, ravenClient, salt)
+		patched, err := ModifyNwcConfig(file)
 		if err != nil {
 			LogError("Unable to patch", err)
 			w.WriteHeader(http.StatusBadRequest)
@@ -100,21 +98,29 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-        tracer.Start(
-            tracer.WithService("mail"),
-            tracer.WithEnv("prod"),
-	    tracer.WithAgentAddr("127.0.0.1:8126"),
-        )
-        defer tracer.Stop()
+	if global.Datadog {
+		var err error
+		dataDogClient, err = statsd.New("127.0.0.1:8125")
+		if err != nil {
+			panic(err)
+		}
 
-        if err := profiler.Start(
-            profiler.WithService("mail"),
-            profiler.WithEnv("prod"),
-        ); err != nil {
-            log.Fatal(err)
-        }
-        defer profiler.Stop()
-	
+		tracer.Start(
+			tracer.WithService("mail"),
+			tracer.WithEnv("prod"),
+			tracer.WithAgentAddr("127.0.0.1:8126"),
+		)
+		defer tracer.Stop()
+
+		if err := profiler.Start(
+			profiler.WithService("mail"),
+			profiler.WithEnv("prod"),
+		); err != nil {
+			log.Fatal(err)
+		}
+		defer profiler.Stop()
+	}
+
 	// Get salt for passwords
 	saltLocation := "config/salt.bin"
 	salt, err := ioutil.ReadFile(saltLocation)
@@ -165,15 +171,20 @@ func main() {
 		panic(err)
 	}
 
-	if global.RavenDSN != "" {
-		ravenClient, err = raven.New(global.RavenDSN)
-		if err != nil {
-			panic(err)
-		}
-	}
+	// Prepare database
+	initAccountDB()
+	initAuthDB()
+	initCheckDB()
+	initDeleteDB()
+	initInboundParseDB()
+	initReceiveDB()
+	initSendDB()
 
-	if global.Datadog {
-		dataDogClient, err = statsd.New("127.0.0.1:8125")
+	// Configure Sentry
+	if global.RavenDSN != "" {
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn: global.RavenDSN,
+		})
 		if err != nil {
 			panic(err)
 		}
@@ -194,7 +205,7 @@ func main() {
 
 	// Site
 	http.HandleFunc("/patch", configHandle)
-	http.Handle("/", http.FileServer(http.Dir("./patch/site")))
+	http.Handle("/", http.FileServer(http.Dir("./patch")))
 
 	log.Println("Running...")
 

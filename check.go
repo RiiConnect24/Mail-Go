@@ -11,18 +11,30 @@ import (
 	"strconv"
 )
 
+func initCheckDB() {
+	var err error
+	mlchkidStmt, err = db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
+	if err != nil {
+		LogError("Unable to prepare mlchkid statement", err)
+		panic(err)
+	}
+
+	mlidStatement, err = db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	if err != nil {
+		LogError("Unable to prepare mlid statement", err)
+		panic(err)
+	}
+}
+
+var mlchkidStmt *sql.Stmt
+var mlidStatement *sql.Stmt
+
 // Check handles adding the proper interval for check.cgi along with future
 // challenge solving and future mail existence checking.
 func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	// Used later on for challenge solving.
 	var res string
 
-	mlchkidStmt, err := db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
-	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-		LogError("Unable to prepare check statement", err)
-		return
-	}
 	// Grab string of interval
 	interval := strconv.Itoa(inter)
 	// Add required headers
@@ -31,7 +43,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 	w.Header().Add("X-Wii-Mail-Check-Span", interval)
 
 	// Parse form in preparation for finding mail.
-	err = r.ParseForm()
+	err := r.ParseForm()
 	if err != nil {
 		fmt.Fprint(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		LogError("Unable to parse form", err)
@@ -54,12 +66,6 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
 		LogError("Unable to run mlchkid query", err)
 		return
-	}
-
-	mlidStatement, err := db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
-	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-		LogError("Unable to prepare mlid statement", err)
 	}
 
 	// By default, we'll assume there's no mail.

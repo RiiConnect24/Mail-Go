@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"github.com/RiiConnect24/wiino/golang"
-	"github.com/getsentry/raven-go"
+	"github.com/getsentry/sentry-go"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/logrusorgru/aurora"
+	"github.com/logrusorgru/aurora/v3"
 	"log"
 	"math/rand"
 	"regexp"
-	"runtime"
 	"strconv"
 	"time"
 )
@@ -111,17 +110,9 @@ func GenerateBoundary() string {
 }
 
 func LogError(reason string, err error) {
-	// Adapted from
-	// https://stackoverflow.com/a/38551362
-	pc, _, _, ok := runtime.Caller(1)
-	details := runtime.FuncForPC(pc)
-	if ok && details != nil {
-		// Log to console
-		log.Printf("%s: %v", reason, err)
+	// Log to console
+	log.Printf("%s: %v", reason, err)
 
-		// and if it's available, Sentry.
-		if ravenClient != nil {
-			raven.CaptureError(err, map[string]string{"given_reason": reason})
-		}
-	}
+	// and if it's available, Sentry.
+	sentry.CaptureException(err)
 }

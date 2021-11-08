@@ -5,11 +5,10 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"golang.org/x/image/draw"
 	"io/ioutil"
 	"log"
 	"strings"
-
-	"github.com/nfnt/resize"
 
 	"image"
 	// We use jpeg to actually send to the Wii.
@@ -65,7 +64,7 @@ func FormulateMail(from string, to string, subject string, body string, potentia
 
 	// The Wii has a max image size of 8192x8192px.
 	// If any dimension exceeds that, scale to fit.
-	outputImg := resize.Thumbnail(8192, 8192, givenImg, resize.Lanczos3)
+	outputImg := resize(givenImg, 8192, 8192)
 
 	// Encode image as JPEG for the Wii to handle.
 	var outputImgWriter bytes.Buffer
@@ -129,4 +128,28 @@ func genError(mailContent string, body string, boundary string) string {
 		global.SupportEmail,
 		strings.Repeat(CRLF, 3),
 		"--", boundary, "--")
+}
+
+func resize(origImage image.Image, maxWidth int, maxHeight int) image.Image {
+	width := origImage.Bounds().Size().X
+	height := origImage.Bounds().Size().Y
+
+	if width > maxWidth {
+		height = height * maxWidth / width
+		width = maxWidth
+	}
+
+	if height > maxHeight {
+		width = width * maxHeight / height
+		height = maxHeight
+	}
+
+	if width != maxWidth && height != maxHeight {
+		// No resize needs to occur.
+		return origImage
+	}
+
+	newImage := image.NewRGBA(image.Rect(0, 0, width, height))
+	draw.BiLinear.Scale(newImage, newImage.Bounds(), origImage, origImage.Bounds(), draw.Over, nil)
+	return newImage
 }
