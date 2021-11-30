@@ -99,12 +99,6 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	if global.Datadog {
-		var err error
-		dataDogClient, err = statsd.New("127.0.0.1:8125")
-		if err != nil {
-			panic(err)
-		}
-
 		tracer.Start(
 			tracer.WithService("mail"),
 			tracer.WithEnv("prod"),
@@ -185,6 +179,14 @@ func main() {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn: global.RavenDSN,
 		})
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Lastly, Datadog as a whole.
+	if global.Datadog {
+		dataDogClient, err = statsd.New("127.0.0.1:8125")
 		if err != nil {
 			panic(err)
 		}
