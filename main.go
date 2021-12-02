@@ -17,7 +17,6 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	"time"
 )
 
 var global Config
@@ -159,8 +158,7 @@ func main() {
 
 	// Ensure Mail-Go does not overload the backing database.
 	db.SetMaxOpenConns(50)
-	db.SetMaxIdleConns(50)
-	db.SetConnMaxLifetime(time.Second * 10)
+	db.SetMaxIdleConns(10)
 
 	err = db.Ping()
 	if err != nil {

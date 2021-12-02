@@ -12,14 +12,14 @@ import (
 
 func initReceiveDB() {
 	var err error
-	getReceiveStmt, err = db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	getReceiveStmt, err = db.Prepare("SELECT mail_id, mail FROM mails WHERE recipient_id = ? AND sent = 0 ORDER BY timestamp ASC")
 	if err != nil {
 		LogError("Error preparing mail retrieval statement", err)
 		panic(err)
 	}
 
 	// Statement to mark as sent once put in mail output
-	updateMailStateStmt, err = db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
+	updateMailStateStmt, err = db.Prepare("UPDATE mails SET sent = 1 WHERE mail_id = ?")
 	if err != nil {
 		LogError("Error preparing mail state update statement", err)
 		panic(err)
@@ -70,13 +70,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	for storedMail.Next() {
 		// Mail is the content of the mail stored in the database.
 		var mailId string
-		var messageId string
-		var senderWiiID string
 		var mail string
-		var recipientId string
-		var sent int
-		var timestamp string
-		err = storedMail.Scan(&mailId, &messageId, &senderWiiID, &mail, &recipientId, &sent, &timestamp)
+		err = storedMail.Scan(&mailId, &mail)
 		if err != nil {
 			// Hopefully not, but make sure the row layout is the same.
 			panic(err)
@@ -95,6 +90,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 		// Don't add if the mail would exceed max size.
 		if (len(totalMailOutput) + len(individualMail)) > maxsize {
+			storedMail.Close()
 			break
 		} else {
 			totalMailOutput += individualMail
