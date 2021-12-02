@@ -54,7 +54,7 @@ func ModifyNwcConfig(originalConfig []byte) ([]byte, error) {
 	if global.Datadog {
 		err = dataDogClient.Incr("mail.accounts_registered", nil, 1)
 		if err != nil {
-			panic(err)
+			LogError("Unable to update accounts_registered.", err)
 		}
 	}
 

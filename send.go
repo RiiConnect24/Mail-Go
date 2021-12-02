@@ -54,7 +54,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 	if global.Debug {
 		// We won't print file contents within the multipart form.
 		for name, values := range r.MultipartForm.Value {
-			log.Println(aurora.Green(name+ ":"))
+			log.Println(aurora.Green(name + ":"))
 			for value := range values {
 				log.Println(aurora.Cyan("->"), value)
 			}
@@ -251,7 +251,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		if global.Datadog {
 			err := dataDogClient.Incr("mail.sent_mail", nil, 1.0)
 			if err != nil {
-				panic(err)
+				LogError("Unable to update sent_mail.", err)
 			}
 		}
 	}

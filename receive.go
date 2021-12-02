@@ -120,7 +120,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if global.Datadog {
 		err := dataDogClient.Incr("mail.received_mail", nil, float64(amountOfMail))
 		if err != nil {
-			panic(err)
+			LogError("Unable to update received_mail.", err)
 		}
 	}
 

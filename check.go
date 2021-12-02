@@ -116,7 +116,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, interval string) 
 	if global.Datadog {
 		err := dataDogClient.Incr("mail.checked", nil, 1)
 		if err != nil {
-			panic(err)
+			LogError("Unable to update checked.", err)
 		}
 	}
 

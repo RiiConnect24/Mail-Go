@@ -46,7 +46,7 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if global.Datadog {
 		err = dataDogClient.Incr("mail.deleted_mail", nil, floatValue)
 		if err != nil {
-			panic(err)
+			LogError("Unable to update deleted_mail.", err)
 		}
 	}
 
