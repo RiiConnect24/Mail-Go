@@ -9,7 +9,7 @@ import (
 
 func initDeleteDB() {
 	var err error
-	deleteStmt, err = db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ? ORDER BY `timestamp` ASC LIMIT ?")
+	deleteStmt, err = db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ?")
 	if err != nil {
 		LogError("Error creating delete prepared statement", err)
 		panic(err)
@@ -36,19 +36,15 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	}
 
 	delnum := r.Form.Get("delnum")
-	actualDelnum, err := strconv.Atoi(delnum)
+	floatValue, err := strconv.ParseFloat(delnum, 64)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(340, "Invalid delete value."))
 		return
 	}
-	_, err = deleteStmt.Exec(mlid, actualDelnum)
+	_, err = deleteStmt.Exec(mlid[1:])
 
 	if global.Datadog {
-		s, err := strconv.ParseFloat(delnum, 64)
-		if err != nil {
-			panic(err)
-		}
-		err = dataDogClient.Incr("mail.deleted_mail", nil, s)
+		err = dataDogClient.Incr("mail.deleted_mail", nil, floatValue)
 		if err != nil {
 			panic(err)
 		}
