@@ -9,7 +9,7 @@ import (
 
 func initDeleteDB() {
 	var err error
-	deleteStmt, err = db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ?")
+	deleteStmt, err = db.Prepare("DELETE FROM mails WHERE sent = 1 AND recipient_id = ?")
 	if err != nil {
 		LogError("Error creating delete prepared statement", err)
 		panic(err)
