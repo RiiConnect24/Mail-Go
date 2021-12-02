@@ -16,6 +16,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"time"
 )
 
@@ -34,6 +35,7 @@ func logRequest(handler http.Handler) http.Handler {
 			for name, value := range r.Form {
 				log.Print(name, " ", aurora.Green("=>"), " ", value)
 			}
+
 			log.Printf("Accessing from: %s", aurora.Blue(r.Host))
 		}
 
@@ -43,7 +45,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
-	Check(w, r, db, global.Interval)
+	Check(w, r, db, strconv.Itoa(global.Interval))
 }
 
 func receiveHandler(w http.ResponseWriter, r *http.Request) {
