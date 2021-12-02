@@ -5,6 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/logrusorgru/aurora/v3"
+	"log"
 	"net/http"
 	"net/smtp"
 	"regexp"
@@ -49,14 +51,26 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 		return
 	}
 
-	// Now check if it can be verified
-	isVerified, authedWiiId, err := Auth(r.Form)
-	if err != nil {
-		fmt.Fprintf(w, GenNormalErrorCode(551, "Something weird happened."))
-		LogError("Error changing from authentication database.", err)
-		return
-	} else if !isVerified {
+	if global.Debug {
+		// We won't print file contents within the multipart form.
+		for name, values := range r.MultipartForm.Value {
+			log.Println(aurora.Green(name+ ":"))
+			for value := range values {
+				log.Println(aurora.Cyan("->"), value)
+			}
+		}
+	}
+
+	// This may be empty if mlid is not present.
+	// We expect this, however - our authentication function will determine.
+	mlid, passwd := parseSendAuth(r.Form.Get("mlid"))
+	err = checkPasswdValidity(mlid, passwd)
+	if err == ErrInvalidCredentials {
 		fmt.Fprintf(w, GenNormalErrorCode(250, "An authentication error occurred."))
+		return
+	} else if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(551, "Something weird happened."))
+		LogError("Error querying authentication database", err)
 		return
 	}
 
@@ -100,7 +114,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			if potentialMailFromWrapper != nil {
 				potentialMailFrom := potentialMailFromWrapper[1]
 				// Ensure MAIL FROM matches the authed mlid (#29)
-				if potentialMailFrom != authedWiiId {
+				if potentialMailFrom != mlid {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
 					break
 				} else if potentialMailFrom == "w9999999900000000" {
@@ -116,7 +130,7 @@ func Send(w http.ResponseWriter, r *http.Request, db *sql.DB, config Config) {
 			if potentialMailFromWrapper2 != nil {
 				potentialMailFrom2 := potentialMailFromWrapper2[1]
 				// Ensure From matches the authed mlid (#29)
-				if potentialMailFrom2 != authedWiiId {
+				if potentialMailFrom2 != mlid {
 					eventualOutput += GenMailErrorCode(mailNumber, 351, "Attempt to impersonate another user.")
 					return
 				} else if potentialMailFrom2 == "w9999999900000000" {

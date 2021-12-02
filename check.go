@@ -3,7 +3,6 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha1"
-	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
@@ -54,13 +53,10 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, interval string) 
 		return
 	}
 
-	// Grab salt + mlchkid sha512, as we have this format in the database
-	hashByte := sha512.Sum512(append(salt, []byte(mlchkid)...))
-	hash := hex.EncodeToString(hashByte[:])
-
 	// Check mlchkid
 	var mlid string
 
+	hash := hashAuthParam(mlchkid)
 	result := userExistsStmt.QueryRow(hash)
 	err := result.Scan(&mlid)
 	if err == sql.ErrNoRows {

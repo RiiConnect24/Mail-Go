@@ -32,33 +32,18 @@ var updateMailStateStmt *sql.Stmt
 // Receive loops through stored mail and formulates a response.
 // Then, if applicable, marks the mail as received.
 func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	// Parse form.
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(330, "Unable to parse parameters."))
-		LogError("Unable to parse form", err)
-		return
-	}
+	mlid := r.Form.Get("mlid")
+	passwd := r.Form.Get("passwd")
 
-	isVerified, mlidWithW, err := Auth(r.Form)
-	if err != nil {
+	err := checkPasswdValidity(mlid, passwd)
+	if err == ErrInvalidCredentials {
+		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
+		return
+	} else if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(531, "Something weird happened."))
 		LogError("Error receiving.", err)
 		return
-	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
-		return
 	}
-
-	// We already know the mlid is valid as Auth checks it for us,
-	// so we don't need to further check.
-
-	if mlidWithW == "" {
-		fmt.Fprintf(w, GenNormalErrorCode(330, "Unable to parse parameters."))
-		return
-	}
-
-	mlid := mlidWithW[1:]
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
@@ -66,7 +51,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	storedMail, err := getReceiveStmt.Query(mlid)
+	// We must strip the first w from the received mlid as the database stores it without.
+	storedMail, err := getReceiveStmt.Query(mlid[1:])
 	if err != nil {
 		LogError("Error running query against mlid", err)
 		return

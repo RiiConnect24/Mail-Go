@@ -20,13 +20,18 @@ var deleteStmt *sql.Stmt
 
 // Delete handles delete requests of mail.
 func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	isVerified, wiiID, err := Auth(r.Form)
-	if err != nil {
+	// These may be empty. This is expected:
+	// our authentication function will handle accordingly.
+	mlid := r.Form.Get("mlid")
+	passwd := r.Form.Get("passwd")
+
+	err := checkPasswdValidity(mlid, passwd)
+	if err == ErrInvalidCredentials {
+		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
+		return
+	} else if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(541, "Something weird happened."))
 		LogError("Error parsing delete authentication", err)
-		return
-	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
 
@@ -36,7 +41,7 @@ func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		fmt.Fprintf(w, GenNormalErrorCode(340, "Invalid delete value."))
 		return
 	}
-	_, err = deleteStmt.Exec(wiiID, actualDelnum)
+	_, err = deleteStmt.Exec(mlid, actualDelnum)
 
 	if global.Datadog {
 		s, err := strconv.ParseFloat(delnum, 64)
