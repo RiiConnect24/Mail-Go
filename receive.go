@@ -12,14 +12,14 @@ import (
 
 func initReceiveDB() {
 	var err error
-	getReceiveStmt, err = db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` = ? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	getReceiveStmt, err = db.Prepare("SELECT mail_id, mail FROM mails WHERE recipient_id = ? AND sent = 0 ORDER BY timestamp ASC")
 	if err != nil {
 		LogError("Error preparing mail retrieval statement", err)
 		panic(err)
 	}
 
 	// Statement to mark as sent once put in mail output
-	updateMailStateStmt, err = db.Prepare("UPDATE `mails` SET `sent` = 1 WHERE `mail_id` = ?")
+	updateMailStateStmt, err = db.Prepare("UPDATE mails SET sent = 1 WHERE mail_id = ?")
 	if err != nil {
 		LogError("Error preparing mail state update statement", err)
 		panic(err)
@@ -32,33 +32,18 @@ var updateMailStateStmt *sql.Stmt
 // Receive loops through stored mail and formulates a response.
 // Then, if applicable, marks the mail as received.
 func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	// Parse form.
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(330, "Unable to parse parameters."))
-		LogError("Unable to parse form", err)
-		return
-	}
+	mlid := r.Form.Get("mlid")
+	passwd := r.Form.Get("passwd")
 
-	isVerified, mlidWithW, err := Auth(r.Form)
-	if err != nil {
+	err := checkPasswdValidity(mlid, passwd)
+	if err == ErrInvalidCredentials {
+		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
+		return
+	} else if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(531, "Something weird happened."))
 		LogError("Error receiving.", err)
 		return
-	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(230, "An authentication error occurred."))
-		return
 	}
-
-	// We already know the mlid is valid as Auth checks it for us,
-	// so we don't need to further check.
-
-	if mlidWithW == "" {
-		fmt.Fprintf(w, GenNormalErrorCode(330, "Unable to parse parameters."))
-		return
-	}
-
-	mlid := mlidWithW[1:]
 
 	maxsize, err := strconv.Atoi(r.Form.Get("maxsize"))
 	if err != nil {
@@ -66,7 +51,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	storedMail, err := getReceiveStmt.Query(mlid)
+	// We must strip the first w from the received mlid as the database stores it without.
+	storedMail, err := getReceiveStmt.Query(mlid[1:])
 	if err != nil {
 		LogError("Error running query against mlid", err)
 		return
@@ -84,13 +70,8 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	for storedMail.Next() {
 		// Mail is the content of the mail stored in the database.
 		var mailId string
-		var messageId string
-		var senderWiiID string
 		var mail string
-		var recipientId string
-		var sent int
-		var timestamp string
-		err = storedMail.Scan(&mailId, &messageId, &senderWiiID, &mail, &recipientId, &sent, &timestamp)
+		err = storedMail.Scan(&mailId, &mail)
 		if err != nil {
 			// Hopefully not, but make sure the row layout is the same.
 			panic(err)
@@ -134,7 +115,7 @@ func Receive(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if global.Datadog {
 		err := dataDogClient.Incr("mail.received_mail", nil, float64(amountOfMail))
 		if err != nil {
-			panic(err)
+			LogError("Unable to update received_mail.", err)
 		}
 	}
 

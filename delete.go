@@ -9,7 +9,7 @@ import (
 
 func initDeleteDB() {
 	var err error
-	deleteStmt, err = db.Prepare("DELETE FROM `mails` WHERE `sent` = 1 AND `recipient_id` = ? ORDER BY `timestamp` ASC LIMIT ?")
+	deleteStmt, err = db.Prepare("DELETE FROM mails WHERE sent = 1 AND recipient_id = ?")
 	if err != nil {
 		LogError("Error creating delete prepared statement", err)
 		panic(err)
@@ -20,32 +20,33 @@ var deleteStmt *sql.Stmt
 
 // Delete handles delete requests of mail.
 func Delete(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	isVerified, wiiID, err := Auth(r.Form)
-	if err != nil {
+	// These may be empty. This is expected:
+	// our authentication function will handle accordingly.
+	mlid := r.Form.Get("mlid")
+	passwd := r.Form.Get("passwd")
+
+	err := checkPasswdValidity(mlid, passwd)
+	if err == ErrInvalidCredentials {
+		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
+		return
+	} else if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(541, "Something weird happened."))
 		LogError("Error parsing delete authentication", err)
-		return
-	} else if !isVerified {
-		fmt.Fprintf(w, GenNormalErrorCode(240, "An authentication error occurred."))
 		return
 	}
 
 	delnum := r.Form.Get("delnum")
-	actualDelnum, err := strconv.Atoi(delnum)
+	floatValue, err := strconv.ParseFloat(delnum, 64)
 	if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(340, "Invalid delete value."))
 		return
 	}
-	_, err = deleteStmt.Exec(wiiID, actualDelnum)
+	_, err = deleteStmt.Exec(mlid[1:])
 
 	if global.Datadog {
-		s, err := strconv.ParseFloat(delnum, 64)
+		err = dataDogClient.Incr("mail.deleted_mail", nil, floatValue)
 		if err != nil {
-			panic(err)
-		}
-		err = dataDogClient.Incr("mail.deleted_mail", nil, s)
-		if err != nil {
-			panic(err)
+			LogError("Unable to update deleted_mail.", err)
 		}
 	}
 
