@@ -129,7 +129,7 @@ func sendGridHandler(w http.ResponseWriter, r *http.Request) {
 	if global.Datadog {
 		err := dataDogClient.Incr("mail.received_mail_sendgrid", nil, 1)
 		if err != nil {
-			panic(err)
+			LogError("Unable to update received_mail_sendgrid.", err)
 		}
 	}
 

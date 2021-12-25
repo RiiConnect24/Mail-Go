@@ -16,7 +16,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
-	"time"
+	"strconv"
 )
 
 var global Config
@@ -34,6 +34,7 @@ func logRequest(handler http.Handler) http.Handler {
 			for name, value := range r.Form {
 				log.Print(name, " ", aurora.Green("=>"), " ", value)
 			}
+
 			log.Printf("Accessing from: %s", aurora.Blue(r.Host))
 		}
 
@@ -43,7 +44,7 @@ func logRequest(handler http.Handler) http.Handler {
 }
 
 func checkHandler(w http.ResponseWriter, r *http.Request) {
-	Check(w, r, db, global.Interval)
+	Check(w, r, db, strconv.Itoa(global.Interval))
 }
 
 func receiveHandler(w http.ResponseWriter, r *http.Request) {
@@ -99,12 +100,6 @@ func configHandle(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	if global.Datadog {
-		var err error
-		dataDogClient, err = statsd.New("127.0.0.1:8125")
-		if err != nil {
-			panic(err)
-		}
-
 		tracer.Start(
 			tracer.WithService("mail"),
 			tracer.WithEnv("prod"),
@@ -163,8 +158,7 @@ func main() {
 
 	// Ensure Mail-Go does not overload the backing database.
 	db.SetMaxOpenConns(50)
-	db.SetMaxIdleConns(50)
-	db.SetConnMaxLifetime(time.Second * 10)
+	db.SetMaxIdleConns(10)
 
 	err = db.Ping()
 	if err != nil {
@@ -185,6 +179,14 @@ func main() {
 		err := sentry.Init(sentry.ClientOptions{
 			Dsn: global.RavenDSN,
 		})
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// Lastly, Datadog as a whole.
+	if global.Datadog {
+		dataDogClient, err = statsd.New("127.0.0.1:8125")
 		if err != nil {
 			panic(err)
 		}

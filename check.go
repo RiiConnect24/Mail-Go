@@ -3,52 +3,49 @@ package main
 import (
 	"crypto/hmac"
 	"crypto/sha1"
-	"crypto/sha512"
 	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"net/http"
-	"strconv"
+)
+
+var (
+	// MailCheckKey is used as the basis of the SHA-1 HMAC performed for the challenge.
+	MailCheckKey = []byte{0xce, 0x4c, 0xf2, 0x9a, 0x3d, 0x6b, 0xe1, 0xc2, 0x61, 0x91, 0x72, 0xb5, 0xcb, 0x29, 0x8c, 0x89, 0x72, 0xd4, 0x50, 0xad}
 )
 
 func initCheckDB() {
 	var err error
-	mlchkidStmt, err = db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
+	userExistsStmt, err = db.Prepare("SELECT `mlid` FROM accounts WHERE `mlchkid` = ?")
 	if err != nil {
-		LogError("Unable to prepare mlchkid statement", err)
+		LogError("Unable to prepare user exists statement", err)
 		panic(err)
 	}
 
-	mlidStatement, err = db.Prepare("SELECT * FROM `mails` WHERE `recipient_id` =? AND `sent` = 0 ORDER BY `timestamp` ASC")
+	hasMailStmt, err = db.Prepare(`SELECT COUNT(mails.mail) > 0
+FROM mails
+WHERE mails.recipient_id = ?
+AND mails.sent = 0`)
+
 	if err != nil {
-		LogError("Unable to prepare mlid statement", err)
+		LogError("Unable to prepare length statement", err)
 		panic(err)
 	}
 }
 
-var mlchkidStmt *sql.Stmt
-var mlidStatement *sql.Stmt
+var userExistsStmt *sql.Stmt
+var hasMailStmt *sql.Stmt
 
 // Check handles adding the proper interval for check.cgi along with future
 // challenge solving and future mail existence checking.
-func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
+func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, interval string) {
 	// Used later on for challenge solving.
 	var res string
 
-	// Grab string of interval
-	interval := strconv.Itoa(inter)
 	// Add required headers
 	w.Header().Add("Content-Type", "text/plain;charset=utf-8")
 	w.Header().Add("X-Wii-Mail-Download-Span", interval)
 	w.Header().Add("X-Wii-Mail-Check-Span", interval)
-
-	// Parse form in preparation for finding mail.
-	err := r.ParseForm()
-	if err != nil {
-		fmt.Fprint(w, GenNormalErrorCode(320, "Unable to parse parameters."))
-		LogError("Unable to parse form", err)
-		return
-	}
 
 	mlchkid := r.Form.Get("mlchkid")
 	if mlchkid == "" {
@@ -56,69 +53,41 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	// Grab salt + mlchkid sha512
-	hashByte := sha512.Sum512(append(salt, []byte(mlchkid)...))
-	hash := hex.EncodeToString(hashByte[:])
-
 	// Check mlchkid
-	result, err := mlchkidStmt.Query(hash)
-	if err != nil {
+	var mlid string
+
+	hash := hashAuthParam(mlchkid)
+	result := userExistsStmt.QueryRow(hash)
+	err := result.Scan(&mlid)
+	if err == sql.ErrNoRows {
+		// Looks like that user didn't exist.
+		fmt.Fprintf(w, GenNormalErrorCode(321, "User not found."))
+		return
+	} else if err != nil {
 		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to parse parameters."))
-		LogError("Unable to run mlchkid query", err)
+		LogError("Unable to run check query", err)
 		return
 	}
 
 	// By default, we'll assume there's no mail.
 	mailFlag := "000000000000000000000000000000000"
-	resultsLoop := 0
-	size := 0
+	var hasMail bool
 
-	var mlid string
-
-	// Scan through returned rows.
-	defer result.Close()
-	for result.Next() {
-		err = result.Scan(&mlid)
-		if err != nil {
-			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-			LogError("Unable to run mlid", err)
-			return
-		}
-
-		// Splice off w from mlid
-		storedMail, err := mlidStatement.Query(mlid[1:])
-		if err != nil {
-			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-			LogError("Unable to run mlid", err)
-			return
-		}
-
-		defer storedMail.Close()
-		for storedMail.Next() {
-			size++
-		}
-		err = result.Err()
-		if err != nil {
-			fmt.Fprintf(w, GenNormalErrorCode(420, "Unable to formulate authentication statement."))
-			LogError("Unable to get user mail", err)
-			return
-		}
-
-		// Set mail flag to number of mail taken from database
-		resultsLoop++
+	// recipient_id has no w as a prefix to its mlid, so we must strip when querying.
+	result = hasMailStmt.QueryRow(mlid[1:])
+	err = result.Scan(&hasMail)
+	if err != nil {
+		fmt.Fprintf(w, GenNormalErrorCode(320, "Unable to query mail availability"))
+		LogError("Unable to query mail availability", err)
+		return
 	}
 
-	if size > 0 {
+	if hasMail {
 		// mailFlag needs to be not one, apparently.
 		// The Wii will refuse to check otherwise.
 		mailFlag = RandStringBytesMaskImprSrc(33) // This isn't how Nintendo did the mail flag, how they did it is currently unknown.
 	} else {
 		// mailFlag was already set to 0 above.
-	}
-
-	key, err := hex.DecodeString("ce4cf29a3d6be1c2619172b5cb298c8972d450ad")
-	if err != nil {
-		LogError("Unable to decode key", err)
 	}
 
 	chlng := r.Form.Get("chlng")
@@ -127,7 +96,7 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	h := hmac.New(sha1.New, []byte(key))
+	h := hmac.New(sha1.New, MailCheckKey)
 	h.Write([]byte(chlng))
 	h.Write([]byte("\n"))
 	h.Write([]byte(mlid))
@@ -144,16 +113,10 @@ func Check(w http.ResponseWriter, r *http.Request, db *sql.DB, inter int) {
 		return
 	}
 
-	if resultsLoop == 0 {
-		// Looks like that user didn't exist.
-		fmt.Fprintf(w, GenNormalErrorCode(321, "User not found."))
-		return
-	}
-
 	if global.Datadog {
 		err := dataDogClient.Incr("mail.checked", nil, 1)
 		if err != nil {
-			panic(err)
+			LogError("Unable to update checked.", err)
 		}
 	}
 
