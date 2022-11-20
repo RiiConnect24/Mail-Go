@@ -22,8 +22,9 @@ func initCheckDB() {
 		panic(err)
 	}
 
-	hasMailStmt, err = db.Prepare(`SELECT COUNT(mails.mail) > 0
+	hasMailStmt, err = db.Prepare(`SELECT COUNT(*) > 0
 FROM mails
+USE INDEX(recipient_id_index)
 WHERE mails.recipient_id = ?
 AND mails.sent = 0`)
 
