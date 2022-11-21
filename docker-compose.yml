@@ -5,9 +5,9 @@ services:
     build: .
     volumes:
       - ./config:/go/src/github.com/RiiConnect24/Mail-Go/config
-    ports:
+    #ports:
       # Container 80 -> Host 8080
-      - "8080:80"
+      #- "8080:80"
     restart: on-failure
     network_mode: "host"
     cpu_percent: 25
